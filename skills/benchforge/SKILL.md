@@ -9,13 +9,20 @@ Use this skill when working inside a Benchforge challenge.
 
 ## First Pass
 
-1. Read `challenge.json`.
+1. Read `challenge.json`; if it is absent, read `benchmark.json`.
 2. Identify `cli`, `editablePaths`, `forbiddenPaths`, `commands`, and score direction.
    - If `commands.verify` exists, treat it as verifier-only checks. Do not run it as proof of public/local score unless you are acting as the verifier.
+   - If `setupCommand` or `commands.setup` exists, run setup once before benchmarking.
 3. Find the branded CLI:
    - Prefer `node ./challenges/<id>/bin/<cli>.js` from repo root.
    - If already inside the challenge directory, use the configured CLI command or `node bin/<cli>.js`.
-4. Run baseline:
+4. If setup is configured, run it once:
+
+```bash
+<cli> setup
+```
+
+5. Run baseline:
 
 ```bash
 <cli> doctor --run

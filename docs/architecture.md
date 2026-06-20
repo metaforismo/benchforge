@@ -21,7 +21,7 @@ Benchforge Core
   hosted API client
 
 Challenge Pack
-  challenge.json
+  challenge.json or benchmark.json
   harness/
   starter/
   SKILL.md
@@ -73,6 +73,11 @@ node ./challenges/grpoarena/bin/grpoarena.js run
 ```
 
 The generated CLI wrapper is thin, but the generated challenge pack changes the actual benchmark behavior through its spec, editable paths, and harness.
+
+Benchforge loads `challenge.json` first. If it is absent, it falls back to a
+minimal ECDSA.fail-style `benchmark.json` with `editablePaths`,
+`setupCommand`, `benchmarkCommand`, and `scorePath`. Command values can be shell
+strings or argv arrays such as `["bash", "-lc", "./benchmark.sh"]`.
 
 `doctor --run` is the preflight command for both humans and agents. It reports
 the challenge root, editable files, forbidden path coverage, optional verifier

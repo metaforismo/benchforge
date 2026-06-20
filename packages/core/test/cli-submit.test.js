@@ -45,6 +45,16 @@ async function createTempChallenge() {
   return root;
 }
 
+test("setup runs optional challenge setup command", async () => {
+  const root = await createTempChallenge();
+  const challenge = JSON.parse(await readFile(join(root, "challenge.json"), "utf8"));
+  challenge.commands.setup = [process.execPath, "-e", "console.log('setup ok')"];
+  await writeFile(join(root, "challenge.json"), JSON.stringify(challenge, null, 2));
+
+  const result = await execFileAsync(process.execPath, [cliPath, "setup"], { cwd: root });
+  assert.match(result.stdout, /setup ok/);
+});
+
 test("submit --verify packages and verifies a candidate in one command", async () => {
   const root = await createTempChallenge();
   const result = await execFileAsync(process.execPath, [

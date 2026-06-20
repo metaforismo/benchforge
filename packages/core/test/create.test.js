@@ -23,6 +23,7 @@ test("createChallenge creates a branded challenge pack", async () => {
 
   assert.equal(created.cli, "grpoarena");
   assert.equal(challengeJson.name, "GRPO Arena");
+  assert.equal(challengeJson.scorePath, "score.json");
   assert.deepEqual(challengeJson.editablePaths, ["starter/solution.js"]);
   assert.match(wrapper, /BENCHFORGE_CHALLENGE_ROOT/);
   assert.match(skill, /^---\nname: grpoarena/m);

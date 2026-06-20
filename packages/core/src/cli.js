@@ -2,7 +2,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { loadChallengeSpec } from "./spec.js";
-import { runScore, runTest } from "./runner.js";
+import { runChallengeCommand, runScore, runTest } from "./runner.js";
 import { appendNote, appendRun, listNotes, listRuns } from "./store.js";
 import { rankRuns } from "./leaderboard.js";
 import { createReceipt, verifyReceipt } from "./receipts.js";
@@ -29,6 +29,7 @@ function printChallengeHelp(cliName) {
   console.log(`Usage: ${cliName} <command>
 
 Commands:
+  setup                     Run optional challenge setup command
   run                       Run tests, score, store local run
   test                      Run public tests only
   score                     Run score command only
@@ -244,6 +245,17 @@ async function main(argv = process.argv) {
 
   if (!command || command === "help") {
     printChallengeHelp(cliName);
+    return;
+  }
+
+  if (command === "setup") {
+    if (!spec.commands.setup) {
+      throw new Error("challenge does not define commands.setup");
+    }
+    const result = await runChallengeCommand(spec.root, spec.commands.setup);
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+    process.exitCode = result.exitCode;
     return;
   }
 

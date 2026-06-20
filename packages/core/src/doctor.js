@@ -63,7 +63,7 @@ async function gitContext(root) {
 export async function runDoctor(spec, options = {}) {
   const checks = [];
 
-  checks.push(check("spec", "pass", "challenge.json loaded", {
+  checks.push(check("spec", "pass", `${spec.configFile ?? "challenge.json"} loaded`, {
     id: spec.id,
     version: spec.version,
     cli: spec.cli
@@ -88,6 +88,12 @@ export async function runDoctor(spec, options = {}) {
   checks.push(spec.commands.verify
     ? check("verifier-checks", "pass", "commands.verify is configured", { command: spec.commands.verify })
     : check("verifier-checks", "warn", "commands.verify is not configured; public tests and verifier checks are identical"));
+
+  checks.push(spec.commands.setup
+    ? check("setup-command", "pass", "commands.setup is configured", { command: spec.commands.setup })
+    : check("setup-command", "pass", "no setup command configured"));
+
+  checks.push(check("score-path", "pass", `score output path is ${spec.scorePath ?? "score.json"}`));
 
   checks.push(hasHostedApi(spec)
     ? check("hosted-api", "pass", "hosted API URL configured", { apiUrl: spec.hosted.apiUrl })

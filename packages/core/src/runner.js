@@ -4,9 +4,10 @@ import { join } from "node:path";
 
 export function runChallengeCommand(root, command) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, {
+    const isArrayCommand = Array.isArray(command);
+    const child = spawn(isArrayCommand ? command[0] : command, isArrayCommand ? command.slice(1) : [], {
       cwd: root,
-      shell: true,
+      shell: !isArrayCommand,
       env: { ...process.env, BENCHFORGE_ROOT: root }
     });
 
@@ -38,7 +39,7 @@ export async function runVerifierChecks(spec) {
 }
 
 export async function runScore(spec) {
-  const scorePath = join(spec.root, "score.json");
+  const scorePath = join(spec.root, spec.scorePath ?? "score.json");
   await rm(scorePath, { force: true });
   const commandResult = await runChallengeCommand(spec.root, spec.commands.score);
   if (commandResult.exitCode !== 0) {

@@ -53,6 +53,32 @@ node ./challenges/grpoarena/bin/grpoarena.js verify --json --output .benchforge/
 
 That generated CLI is real: it loads the shared Benchforge engine with the generated `challenges/grpoarena/challenge.json`.
 
+## Minimal Benchmark Contract
+
+Benchforge can also run an ECDSA.fail-style `benchmark.json` when no
+`challenge.json` is present:
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "my-benchmark",
+  "direction": "-",
+  "editablePaths": ["src/solution"],
+  "setupCommand": ["bash", "-lc", "./setup.sh"],
+  "benchmarkCommand": ["bash", "-lc", "./benchmark.sh"],
+  "scorePath": "score.json"
+}
+```
+
+`benchmarkCommand` must write the configured score file with this shape:
+
+```json
+{ "score": 12.3, "metrics": { "time_ms": 12.3 } }
+```
+
+The full `challenge.json` format is still better when you want separate public
+tests, verifier-only checks, hosted settings, or a custom branded CLI.
+
 ## Skills
 
 The repository includes two Codex skills:

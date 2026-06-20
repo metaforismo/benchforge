@@ -43,6 +43,7 @@ arena. The reusable pieces should live in the engine, while each challenge pack
 stays small:
 
 - `challenge.json` is the general contract.
+- `benchmark.json` is supported as a minimal ECDSA.fail-style contract.
 - `harness/` owns domain-specific testing and scoring.
 - `starter/` or equivalent editable paths are the participant surface.
 - `SKILL.md` gives agents local rules.
@@ -59,11 +60,15 @@ also means the surface can feel more complex. The product rule is:
 For local iteration:
 
 ```bash
+<cli> setup
 <cli> doctor --run
 <cli> run
 <cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 <cli> leaderboard
 ```
+
+`setup` is optional and only exists when the challenge declares `commands.setup`
+or `setupCommand`.
 
 For public trust:
 

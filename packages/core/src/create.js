@@ -97,6 +97,7 @@ if (lastError) {
       primaryMetric: "time_ms",
       secondaryMetrics: ["correctness_cases", "checksum"]
     },
+    scorePath: "score.json",
     editablePaths: ["starter/solution.js"],
     forbiddenPaths: ["harness/**", "challenge.json"],
     commands: {
