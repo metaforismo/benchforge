@@ -30,6 +30,7 @@ Use this skill to turn a domain or problem into a concrete Benchforge challenge.
    - public tests
    - hidden/verifier-only checks
    - optional `commands.verify` command for hidden or verifier-only checks
+   - whether `benchforge.submission.v1` bundles are enough or the challenge needs external artifacts such as weights, datasets, proofs, or logs
    - primary metric and score direction
    - hardware or compute budget
    - local, accepted, verified, promoted, and replicated tiers
@@ -68,6 +69,7 @@ End design work with:
 Challenge:
 CLI:
 Artifact:
+Bundle contents:
 Editable paths:
 Forbidden paths:
 Score:

@@ -203,8 +203,8 @@ Run:
 
 \`\`\`bash
 node ./challenges/${id}/bin/${cli}.js run
-node ./challenges/${id}/bin/${cli}.js submit
-node ./challenges/${id}/bin/${cli}.js verify --json --output .benchforge/verifier-result.json
+node ./challenges/${id}/bin/${cli}.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/${id}/bin/${cli}.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
 node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
 node ./challenges/${id}/bin/${cli}.js hosted leaderboard --api "$BENCHFORGE_API_URL"
@@ -238,8 +238,8 @@ Commands:
 
 \`\`\`bash
 node ./challenges/${id}/bin/${cli}.js run
-node ./challenges/${id}/bin/${cli}.js submit
-node ./challenges/${id}/bin/${cli}.js verify --json --output .benchforge/verifier-result.json
+node ./challenges/${id}/bin/${cli}.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/${id}/bin/${cli}.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
 node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
 \`\`\`

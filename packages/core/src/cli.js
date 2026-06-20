@@ -7,7 +7,13 @@ import { appendNote, appendRun, listNotes, listRuns } from "./store.js";
 import { rankRuns } from "./leaderboard.js";
 import { createReceipt, verifyReceipt } from "./receipts.js";
 import { exportReport } from "./report.js";
-import { createSubmission, verifySubmission } from "./submissions.js";
+import {
+  createSubmission,
+  exportSubmissionBundle,
+  importSubmissionBundle,
+  verifySubmission,
+  verifySubmissionBundle
+} from "./submissions.js";
 import { listSubmissions } from "./store.js";
 import { createChallenge } from "./create.js";
 import {
@@ -26,11 +32,16 @@ Commands:
   test                      Run public tests only
   score                     Run score command only
   submit                    Package current editable files as a candidate
+                           optional: --bundle-output <path>
   verify [id] [--json]      Verify candidate with public checks
+                           optional: --bundle <path>
                            optional: --output <path>
                            optional: --trusted --promote --verifier-kind <kind>
   receipt verify <file>     Verify a receipt JSON file
   submissions list          Show local candidate submissions
+  submissions export [id]   Export a portable submission bundle
+                           optional: --output <path>
+  submissions import <file> Import a portable submission bundle
   leaderboard               Show local leaderboard
   notes add <text>          Add local note
   notes search <query>      Search local notes
@@ -107,6 +118,7 @@ function parseVerifyArgs(args) {
     id: "latest",
     json: false,
     output: null,
+    bundle: null,
     trusted: false,
     promote: false,
     verifierKind: null
@@ -121,6 +133,11 @@ function parseVerifyArgs(args) {
       const output = args[index + 1];
       if (!output) throw new Error("--output requires a path");
       options.output = output;
+      index += 1;
+    } else if (arg === "--bundle") {
+      const bundle = args[index + 1];
+      if (!bundle) throw new Error("--bundle requires a path");
+      options.bundle = bundle;
       index += 1;
     } else if (arg === "--trusted") {
       options.trusted = true;
@@ -182,10 +199,14 @@ function hostedOptions(spec, options) {
 }
 
 async function writeJsonOutput(spec, outputPath, value) {
-  const resolved = outputPath.startsWith("/") ? outputPath : resolve(spec.root, outputPath);
+  const resolved = resolveChallengePath(spec, outputPath);
   await mkdir(dirname(resolved), { recursive: true });
   await writeFile(resolved, JSON.stringify(value, null, 2), "utf8");
   return resolved;
+}
+
+function resolveChallengePath(spec, path) {
+  return path.startsWith("/") ? path : resolve(spec.root, path);
 }
 
 async function main(argv = process.argv) {
@@ -261,6 +282,7 @@ async function main(argv = process.argv) {
   }
 
   if (command === "submit") {
+    const { options } = parseOptions([subcommand, ...rest].filter(Boolean));
     const testResult = await runTest(spec);
     process.stdout.write(testResult.stdout);
     process.stderr.write(testResult.stderr);
@@ -271,19 +293,28 @@ async function main(argv = process.argv) {
 
     const scoreResult = await runScore(spec);
     const submission = await createSubmission(spec, scoreResult);
+    let bundleOutput = submission.bundlePath;
+    if (options["bundle-output"]) {
+      const exported = await exportSubmissionBundle(spec, submission.id, resolveChallengePath(spec, options["bundle-output"]));
+      bundleOutput = exported.outputPath;
+    }
     console.log(`${cliName}: candidate submission ${submission.id}`);
     console.log(`${cliName}: score ${submission.score}`);
     console.log(`${cliName}: package ${submission.path}`);
+    console.log(`${cliName}: bundle ${bundleOutput}`);
     return;
   }
 
   if (command === "verify") {
     const options = parseVerifyArgs([subcommand, ...rest].filter(Boolean));
-    const verified = await verifySubmission(spec, options.id, {
+    const verifyOptions = {
       trusted: options.trusted,
       promote: options.promote,
       verifierKind: options.verifierKind
-    });
+    };
+    const verified = options.bundle
+      ? await verifySubmissionBundle(spec, resolveChallengePath(spec, options.bundle), verifyOptions)
+      : await verifySubmission(spec, options.id, verifyOptions);
     if (options.output) {
       const outputPath = await writeJsonOutput(spec, options.output, verified.result);
       if (!options.json) {
@@ -321,6 +352,28 @@ async function main(argv = process.argv) {
     }
     for (const submission of submissions) {
       console.log(`${submission.id} ${submission.status} ${submission.score} ${submission.createdAt}`);
+    }
+    return;
+  }
+
+  if (command === "submissions" && subcommand === "export") {
+    const { positional, options } = parseOptions(rest);
+    const id = positional[0] ?? "latest";
+    const outputPath = options.output ? resolveChallengePath(spec, options.output) : null;
+    const exported = await exportSubmissionBundle(spec, id, outputPath);
+    console.log(`${cliName}: exported submission ${exported.submission.id}`);
+    console.log(`${cliName}: bundle ${exported.outputPath}`);
+    return;
+  }
+
+  if (command === "submissions" && subcommand === "import") {
+    const { positional } = parseOptions(rest);
+    const bundlePath = positional[0];
+    if (!bundlePath) throw new Error("submissions import requires a bundle file");
+    const imported = await importSubmissionBundle(spec, resolveChallengePath(spec, bundlePath));
+    console.log(`${cliName}: imported submission ${imported.submission.id}`);
+    if (imported.alreadyImported) {
+      console.log(`${cliName}: submission was already imported`);
     }
     return;
   }

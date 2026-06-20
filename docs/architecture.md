@@ -103,6 +103,7 @@ toyfail submit
   run score command
   copy editable files into .benchforge/submissions/<id>/files
   write submission.json
+  write submission.bundle.json
   store candidate row
 
 toyfail verify <id>
@@ -117,6 +118,33 @@ toyfail verify <id>
 ```
 
 The local verifier is intentionally conservative about wording. It can mark a candidate `accepted` because it passed public checks from a package, but it does not make that result publicly trusted.
+
+## Submission Bundle Contract
+
+`submit` writes a portable JSON bundle:
+
+```json
+{
+  "schemaVersion": "benchforge.submission.v1",
+  "challenge": { "id": "toyfail", "version": "0.1.0" },
+  "submission": {
+    "id": "sub_...",
+    "editablePaths": ["starter/solution.js"],
+    "files": ["starter/solution.js"]
+  },
+  "files": [
+    {
+      "path": "starter/solution.js",
+      "size": 1234,
+      "sha256": "...",
+      "contentBase64": "..."
+    }
+  ],
+  "bundleHash": "..."
+}
+```
+
+The bundle hash covers challenge metadata, candidate metadata, file paths, file hashes, and file contents. `verify --bundle <file>` imports the bundle, rejects tampering, applies only allowed editable files, and then runs the same verifier flow.
 
 ## Verifier Result Contract
 

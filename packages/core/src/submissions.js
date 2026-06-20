@@ -1,13 +1,35 @@
-import { cp, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { runScore, runTest, runVerifierChecks } from "./runner.js";
 import { appendRun, appendSubmission, getStoreDir, listSubmissions, updateSubmission } from "./store.js";
 import { createReceipt } from "./receipts.js";
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function sha256(buffer) {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => canonicalize(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalize(value[key])])
+    );
+  }
+  return value;
+}
+
+function canonicalJson(value) {
+  return JSON.stringify(canonicalize(value));
 }
 
 function normalizeRelative(path) {
@@ -69,6 +91,46 @@ async function copyIntoSubmission(root, outputRoot, file) {
   await cp(join(root, file), destination);
 }
 
+async function createSubmissionBundle(spec, manifest) {
+  const files = [];
+  for (const file of manifest.files) {
+    const bytes = await readFile(join(spec.root, file));
+    files.push({
+      path: file,
+      size: bytes.byteLength,
+      sha256: sha256(bytes),
+      contentBase64: bytes.toString("base64")
+    });
+  }
+
+  const unsigned = {
+    schemaVersion: "benchforge.submission.v1",
+    createdAt: nowIso(),
+    challenge: {
+      id: spec.id,
+      name: spec.name,
+      version: spec.version,
+      scoreDirection: spec.score.direction,
+      primaryMetric: spec.score.primaryMetric
+    },
+    submission: {
+      id: manifest.id,
+      createdAt: manifest.createdAt,
+      status: "candidate",
+      candidateScore: manifest.score,
+      candidateMetrics: manifest.metrics,
+      editablePaths: manifest.editablePaths,
+      files: manifest.files
+    },
+    files
+  };
+
+  return {
+    ...unsigned,
+    bundleHash: sha256(Buffer.from(canonicalJson(unsigned)))
+  };
+}
+
 export async function createSubmission(spec, scoreResult) {
   const submissionId = `sub_${randomUUID()}`;
   const submissionDir = join(getStoreDir(spec.root), "submissions", submissionId);
@@ -95,16 +157,145 @@ export async function createSubmission(spec, scoreResult) {
   };
 
   await writeFile(join(submissionDir, "submission.json"), JSON.stringify(manifest, null, 2), "utf8");
+  const bundle = await createSubmissionBundle(spec, manifest);
+  const bundlePath = join(submissionDir, "submission.bundle.json");
+  await writeFile(bundlePath, JSON.stringify(bundle, null, 2), "utf8");
   return appendSubmission(spec.root, {
     ...manifest,
     id: submissionId,
-    path: submissionDir
+    path: submissionDir,
+    bundlePath,
+    bundleHash: bundle.bundleHash
   });
 }
 
 async function latestSubmission(root) {
   const submissions = await listSubmissions(root);
   return submissions.at(-1) ?? null;
+}
+
+async function findSubmission(root, requestedId = "latest") {
+  if (requestedId === "latest") return latestSubmission(root);
+  return (await listSubmissions(root)).find((candidate) => candidate.id === requestedId);
+}
+
+export async function exportSubmissionBundle(spec, requestedId = "latest", outputPath = null) {
+  const submission = await findSubmission(spec.root, requestedId);
+  if (!submission) {
+    throw new Error("no submission found");
+  }
+  const bundlePath = submission.bundlePath ?? join(submission.path, "submission.bundle.json");
+  const resolvedOutput = outputPath ?? join(getStoreDir(spec.root), `${submission.id}.submission.bundle.json`);
+  await mkdir(dirname(resolvedOutput), { recursive: true });
+  await copyFile(bundlePath, resolvedOutput);
+  return {
+    submission,
+    outputPath: resolvedOutput
+  };
+}
+
+function assertBundleMatchesSpec(spec, bundle) {
+  if (!bundle || typeof bundle !== "object") {
+    throw new Error("submission bundle must be an object");
+  }
+  if (bundle.schemaVersion !== "benchforge.submission.v1") {
+    throw new Error("submission bundle schemaVersion must be benchforge.submission.v1");
+  }
+  if (bundle.challenge?.id !== spec.id) {
+    throw new Error(`submission bundle challenge ${bundle.challenge?.id ?? "unknown"} does not match ${spec.id}`);
+  }
+  if (bundle.challenge?.version !== spec.version) {
+    throw new Error(`submission bundle version ${bundle.challenge?.version ?? "unknown"} does not match ${spec.version}`);
+  }
+  if (!bundle.submission || typeof bundle.submission !== "object") {
+    throw new Error("submission bundle missing submission metadata");
+  }
+  if (typeof bundle.submission.id !== "string" || bundle.submission.id.length === 0) {
+    throw new Error("submission bundle missing submission id");
+  }
+  if (!Array.isArray(bundle.submission.files) || bundle.submission.files.length === 0) {
+    throw new Error("submission bundle must declare files");
+  }
+  if (!Array.isArray(bundle.files) || bundle.files.length === 0) {
+    throw new Error("submission bundle must include files");
+  }
+
+  const { bundleHash, ...unsigned } = bundle;
+  if (bundleHash !== sha256(Buffer.from(canonicalJson(unsigned)))) {
+    throw new Error("submission bundle hash mismatch");
+  }
+
+  const expectedFiles = new Set(bundle.submission.files ?? []);
+  const seenFiles = new Set();
+  for (const entry of bundle.files) {
+    const file = assertSafeRelativePath(entry.path);
+    if (!expectedFiles.has(file)) {
+      throw new Error(`submission bundle contains undeclared file: ${file}`);
+    }
+    if (seenFiles.has(file)) {
+      throw new Error(`submission bundle contains duplicate file: ${file}`);
+    }
+    seenFiles.add(file);
+    if (!isPathAllowed(file, spec.editablePaths)) {
+      throw new Error(`submission bundle contains forbidden path: ${file}`);
+    }
+    const bytes = Buffer.from(String(entry.contentBase64 ?? ""), "base64");
+    if (entry.sha256 !== sha256(bytes)) {
+      throw new Error(`submission bundle hash mismatch: ${file}`);
+    }
+    if (entry.size !== bytes.byteLength) {
+      throw new Error(`submission bundle size mismatch: ${file}`);
+    }
+  }
+  for (const file of expectedFiles) {
+    if (!seenFiles.has(file)) {
+      throw new Error(`submission bundle missing file: ${file}`);
+    }
+  }
+}
+
+export async function importSubmissionBundle(spec, bundlePath) {
+  const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
+  assertBundleMatchesSpec(spec, bundle);
+
+  const existing = (await listSubmissions(spec.root)).find((submission) => submission.id === bundle.submission.id);
+  if (existing) {
+    return { submission: existing, alreadyImported: true };
+  }
+
+  const submissionDir = join(getStoreDir(spec.root), "submissions", bundle.submission.id);
+  await mkdir(join(submissionDir, "files"), { recursive: true });
+
+  for (const entry of bundle.files) {
+    const file = assertSafeRelativePath(entry.path);
+    const destination = join(submissionDir, "files", file);
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, Buffer.from(entry.contentBase64, "base64"));
+  }
+
+  const manifest = {
+    id: bundle.submission.id,
+    createdAt: bundle.submission.createdAt ?? nowIso(),
+    challengeId: spec.id,
+    challengeVersion: spec.version,
+    status: "candidate",
+    score: bundle.submission.candidateScore ?? null,
+    metrics: bundle.submission.candidateMetrics ?? {},
+    editablePaths: bundle.submission.editablePaths ?? spec.editablePaths,
+    files: bundle.submission.files
+  };
+  const localBundlePath = join(submissionDir, "submission.bundle.json");
+  await writeFile(join(submissionDir, "submission.json"), JSON.stringify(manifest, null, 2), "utf8");
+  await writeFile(localBundlePath, JSON.stringify(bundle, null, 2), "utf8");
+
+  const submission = await appendSubmission(spec.root, {
+    ...manifest,
+    path: submissionDir,
+    bundlePath: localBundlePath,
+    bundleHash: bundle.bundleHash,
+    importedFrom: bundlePath
+  });
+  return { submission, alreadyImported: false };
 }
 
 async function copyChallengeForVerification(spec) {
@@ -136,9 +327,7 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
   const promoted = options.promote === true;
   const status = trusted ? (promoted ? "promoted" : "verified") : "accepted";
   const verifierKind = options.verifierKind ?? (trusted ? "trusted-runner" : "local-public");
-  const submission = requestedId === "latest"
-    ? await latestSubmission(spec.root)
-    : (await listSubmissions(spec.root)).find((candidate) => candidate.id === requestedId);
+  const submission = await findSubmission(spec.root, requestedId);
 
   if (!submission) {
     throw new Error("no submission found");
@@ -235,4 +424,13 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
 
   await writeFile(join(getStoreDir(spec.root), `${run.id}.verification.json`), JSON.stringify(result, null, 2), "utf8");
   return { submission: accepted, run, receipt, result };
+}
+
+export async function verifySubmissionBundle(spec, bundlePath, options = {}) {
+  const imported = await importSubmissionBundle(spec, bundlePath);
+  const verified = await verifySubmission(spec, imported.submission.id, options);
+  return {
+    ...verified,
+    imported
+  };
 }

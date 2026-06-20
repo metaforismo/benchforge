@@ -104,6 +104,15 @@ npm run toyfail:leaderboard
 
 `submit` packages only the editable files declared by `challenge.json`.
 
+Each submission also writes a portable `benchforge.submission.v1` bundle containing only allowed editable files, file hashes, and candidate metadata. You can export or verify a bundle directly:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
+node ./challenges/toyfail/bin/toyfail.js submissions export latest --output .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js submissions import .benchforge/latest.bundle.json
+```
+
 `verify` reconstructs the candidate in a temporary clean challenge copy, runs public tests and scoring, and records an `accepted` local run.
 
 `verify --json --output .benchforge/verifier-result.json` emits a stable machine-readable verifier result:

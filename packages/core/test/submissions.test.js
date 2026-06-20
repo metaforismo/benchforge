@@ -5,9 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createSubmission,
+  exportSubmissionBundle,
+  importSubmissionBundle,
   isPathAllowed,
   listEditableFiles,
-  verifySubmission
+  verifySubmission,
+  verifySubmissionBundle
 } from "../src/submissions.js";
 import { listRuns, listSubmissions } from "../src/store.js";
 import { verifyReceipt } from "../src/receipts.js";
@@ -72,13 +75,54 @@ test("createSubmission packages editable files and records candidate", async () 
   });
 
   const manifest = JSON.parse(await readFile(join(submission.path, "submission.json"), "utf8"));
+  const bundle = JSON.parse(await readFile(submission.bundlePath, "utf8"));
   const copiedSolution = await readFile(join(submission.path, "files", "starter", "solution.js"), "utf8");
   const submissions = await listSubmissions(spec.root);
 
   assert.equal(manifest.status, "candidate");
+  assert.equal(bundle.schemaVersion, "benchforge.submission.v1");
+  assert.equal(bundle.bundleHash, submission.bundleHash);
+  assert.equal(bundle.files[0].path, "starter/solution.js");
   assert.match(copiedSolution, /exports.solve/);
   assert.equal(submissions.length, 1);
   assert.equal(submissions[0].id, submission.id);
+});
+
+test("submission bundles can be exported, imported, and verified", async () => {
+  const sourceSpec = await createTempChallenge();
+  const submission = await createSubmission(sourceSpec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  });
+  const exported = await exportSubmissionBundle(sourceSpec, submission.id);
+
+  const targetSpec = await createTempChallenge();
+  const imported = await importSubmissionBundle(targetSpec, exported.outputPath);
+  const result = await verifySubmissionBundle(targetSpec, exported.outputPath);
+
+  assert.equal(imported.submission.id, submission.id);
+  assert.equal(imported.alreadyImported, false);
+  assert.equal(result.imported.alreadyImported, true);
+  assert.equal(result.submission.status, "accepted");
+  assert.equal(result.result.submission.id, submission.id);
+});
+
+test("submission bundle import rejects tampered metadata", async () => {
+  const sourceSpec = await createTempChallenge();
+  const submission = await createSubmission(sourceSpec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  });
+  const bundle = JSON.parse(await readFile(submission.bundlePath, "utf8"));
+  bundle.submission.candidateScore = 999;
+  const tamperedPath = join(sourceSpec.root, ".benchforge", "tampered.bundle.json");
+  await writeFile(tamperedPath, JSON.stringify(bundle, null, 2));
+
+  const targetSpec = await createTempChallenge();
+  await assert.rejects(
+    () => importSubmissionBundle(targetSpec, tamperedPath),
+    /submission bundle hash mismatch/
+  );
 });
 
 test("verifySubmission runs public checks from a packaged candidate", async () => {

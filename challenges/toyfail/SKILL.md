@@ -31,6 +31,15 @@ npm run toyfail:leaderboard
 npm run toyfail:report
 ```
 
+Portable bundle flow:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
+node ./challenges/toyfail/bin/toyfail.js submissions export latest --output .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js submissions import .benchforge/latest.bundle.json
+```
+
 Hosted commands, when `BENCHFORGE_API_URL` is configured:
 
 ```bash

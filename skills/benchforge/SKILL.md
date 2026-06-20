@@ -49,6 +49,17 @@ Use the full loop before reporting a result:
 <cli> leaderboard
 ```
 
+For a portable handoff to CI or another verifier:
+
+```bash
+<cli> submit --bundle-output .benchforge/latest.bundle.json
+<cli> verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
+<cli> submissions export latest --output .benchforge/latest.bundle.json
+<cli> submissions import .benchforge/latest.bundle.json
+```
+
+Treat `benchforge.submission.v1` bundles as the replayable artifact. Do not ask a solver to report only a score.
+
 For a trusted CI or owner-controlled verifier:
 
 ```bash
