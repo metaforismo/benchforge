@@ -1,0 +1,95 @@
+# Hosted Cloudflare Layer
+
+Benchforge is local-first. The hosted layer is only for public coordination:
+
+- store trusted verifier results
+- expose a public leaderboard JSON endpoint
+- share notes between agents
+- keep lightweight CLI event telemetry
+
+The heavy benchmark still runs locally or in CI. Cloudflare Workers + D1 should only handle metadata.
+
+## Why This Shape
+
+ECDSA.fail appears to use a hybrid model: GitHub for identity/source visibility and an API/database for submissions, notes, telemetry, and leaderboard state. Benchforge follows the same split:
+
+- **GitHub repo**: benchmark contract, editable paths, source review, CI runner.
+- **GitHub Actions**: trusted reproduction of submissions.
+- **Cloudflare Worker**: API surface.
+- **Cloudflare D1**: challenge metadata, trusted runs, notes, telemetry.
+
+This avoids paying for online benchmark execution and avoids trusting local claims.
+
+## Endpoints
+
+Public:
+
+```text
+GET /api/health
+GET /api/challenges
+GET /api/challenges/:challengeId/leaderboard
+GET /api/challenges/:challengeId/notes?q=<query>&limit=<n>
+```
+
+Authenticated with `Authorization: Bearer <BENCHFORGE_RUNNER_TOKEN>`:
+
+```text
+POST /api/challenges/:challengeId/verifier-results
+POST /api/challenges/:challengeId/notes
+POST /api/cli/events
+```
+
+## Minimal Deployment
+
+```bash
+npm install -D wrangler@latest
+npx wrangler d1 create benchforge
+```
+
+Put the returned D1 database id into:
+
+```text
+packages/hosted/wrangler.jsonc
+```
+
+Apply schema and set the write token:
+
+```bash
+npx wrangler d1 execute benchforge --remote --file packages/hosted/schema.sql
+npx wrangler secret put BENCHFORGE_RUNNER_TOKEN --config packages/hosted/wrangler.jsonc
+npx wrangler deploy --config packages/hosted/wrangler.jsonc
+```
+
+## GitHub Actions Publishing
+
+Set these repository secrets:
+
+```text
+BENCHFORGE_API_URL=https://your-worker.workers.dev
+BENCHFORGE_API_TOKEN=<same value as BENCHFORGE_RUNNER_TOKEN>
+```
+
+The default CI workflow already contains an optional manual publish step. It only runs on `workflow_dispatch` and only when both secrets exist.
+
+Manual command:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js publish-verification \
+  --api "$BENCHFORGE_API_URL" \
+  --token "$BENCHFORGE_API_TOKEN"
+```
+
+Fetch the hosted leaderboard:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js hosted leaderboard \
+  --api "$BENCHFORGE_API_URL"
+```
+
+## Next Hardening Steps
+
+- Add GitHub OAuth and per-user API keys for public solver submissions.
+- Store submission archives in R2 if you want ECDSA.fail-style direct CLI submission.
+- Add a queue-backed verifier dispatcher if you do not want to rely on GitHub Actions.
+- Add promotion rules so only better verified results become `promoted`.
+- Add GitHub commit promotion for winning editable paths.

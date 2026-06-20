@@ -54,6 +54,20 @@ For a trusted CI or owner-controlled verifier:
 <cli> export-site
 ```
 
+If a hosted Benchforge API is configured, publish only trusted verifier results:
+
+```bash
+<cli> publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
+<cli> hosted leaderboard --api "$BENCHFORGE_API_URL"
+```
+
+For shared agent memory:
+
+```bash
+<cli> hosted notes search "<current idea>" --api "$BENCHFORGE_API_URL"
+<cli> hosted notes add "Tried <approach>; result <summary>." --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
+```
+
 Report:
 
 - local score
@@ -62,6 +76,7 @@ Report:
 - submission id
 - whether the result is only local/accepted or truly remote verified
 - whether `verifier.trusted` is true in the verifier result JSON
+- whether the result was published to the hosted API
 
 ## Trust Language
 
@@ -75,6 +90,8 @@ Use precise status names:
 - `replicated`: verified by more than one trusted environment.
 
 Never call local or accepted results public proof.
+
+Only publish to hosted leaderboards when `verifier.trusted` is true and the status is `verified`, `promoted`, or `replicated`.
 
 ## Creating New Challenges
 

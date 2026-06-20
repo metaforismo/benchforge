@@ -31,6 +31,14 @@ npm run toyfail:leaderboard
 npm run toyfail:report
 ```
 
+Hosted commands, when `BENCHFORGE_API_URL` is configured:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js publish-verification
+node ./challenges/toyfail/bin/toyfail.js hosted leaderboard
+node ./challenges/toyfail/bin/toyfail.js hosted notes search "idea"
+```
+
 When an approach fails, add a note:
 
 ```bash
@@ -39,4 +47,4 @@ node ./challenges/toyfail/bin/toyfail.js notes add "Describe the failed approach
 
 Only trust a score after tests pass and the CLI records a run.
 
-Use `submit` to package a candidate and `verify` to replay that package through public checks. Prefer `npm run toyfail:verify:json` when another tool needs a local machine-readable verifier result. Use `npm run toyfail:verify:trusted` only in owner-controlled CI or a trusted verifier. Treat `accepted` as local-public-check status, not as public leaderboard proof.
+Use `submit` to package a candidate and `verify` to replay that package through public checks. Prefer `npm run toyfail:verify:json` when another tool needs a local machine-readable verifier result. Use `npm run toyfail:verify:trusted` only in owner-controlled CI or a trusted verifier. Treat `accepted` as local-public-check status, not as public leaderboard proof. Publish hosted results only after a trusted verifier result exists.

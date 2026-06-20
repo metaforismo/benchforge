@@ -14,6 +14,7 @@ jobs:
         with:
           node-version: "24"
       - run: npm test
+      - run: npm run hosted:test
       - run: npm run toyfail:run
       - run: npm run toyfail:submit
       - run: npm run toyfail:verify:trusted
@@ -32,3 +33,14 @@ jobs:
           name: toyfail-leaderboard-site
           path: challenges/toyfail/.benchforge/site
           if-no-files-found: error
+      - name: Publish hosted verifier result
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          BENCHFORGE_API_URL: ${{ secrets.BENCHFORGE_API_URL }}
+          BENCHFORGE_API_TOKEN: ${{ secrets.BENCHFORGE_API_TOKEN }}
+        run: |
+          if [ -z "$BENCHFORGE_API_URL" ] || [ -z "$BENCHFORGE_API_TOKEN" ]; then
+            echo "Skipping hosted publish because BENCHFORGE_API_URL or BENCHFORGE_API_TOKEN is not configured."
+            exit 0
+          fi
+          node ./challenges/toyfail/bin/toyfail.js publish-verification

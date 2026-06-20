@@ -198,7 +198,9 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
     challenge: {
       id: spec.id,
       name: spec.name,
-      version: spec.version
+      version: spec.version,
+      scoreDirection: spec.score.direction,
+      primaryMetric: spec.score.primaryMetric
     },
     submission: {
       id: accepted.id,

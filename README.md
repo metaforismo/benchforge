@@ -9,7 +9,7 @@ It helps you build public challenges like ECDSA.fail-style arenas:
 - local notes for agents
 - local leaderboard exports
 - verifier receipts
-- a path to hosted leaderboards
+- Cloudflare hosted leaderboards
 
 ## The Important Trust Rule
 
@@ -28,6 +28,7 @@ npm run toyfail:verify:trusted
 npm run toyfail:submissions
 npm run toyfail:leaderboard
 npm run toyfail:report
+npm run hosted:test
 ```
 
 Open the exported report:
@@ -88,7 +89,7 @@ This repository starts with a local-first MVP:
 - local static report
 - GitHub Actions test baseline
 
-Cloudflare hosted leaderboards and external verifier runners are the next layer.
+The repository now includes an optional Cloudflare Worker + D1 hosted layer for public leaderboards.
 
 ## Local Submission Loop
 
@@ -133,3 +134,37 @@ toyfail verify --json --trusted --promote --verifier-kind github-actions --outpu
 challenges/toyfail/.benchforge/site/index.html
 challenges/toyfail/.benchforge/site/leaderboard.json
 ```
+
+## Hosted Leaderboard
+
+The hosted layer lives in `packages/hosted`.
+
+It stores only metadata:
+
+- trusted verifier results
+- leaderboard rows
+- public notes
+- lightweight CLI events
+
+It does not run heavy benchmarks online. A trusted runner, such as GitHub Actions, runs:
+
+```bash
+npm run toyfail:verify:trusted
+```
+
+Then publishes:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js publish-verification \
+  --api "$BENCHFORGE_API_URL" \
+  --token "$BENCHFORGE_API_TOKEN"
+```
+
+Read the hosted leaderboard:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js hosted leaderboard \
+  --api "$BENCHFORGE_API_URL"
+```
+
+Cloudflare setup is documented in `docs/hosted-cloudflare.md`.

@@ -10,6 +10,13 @@ import { exportReport } from "./report.js";
 import { createSubmission, verifySubmission } from "./submissions.js";
 import { listSubmissions } from "./store.js";
 import { createChallenge } from "./create.js";
+import {
+  addHostedNote,
+  fetchHostedLeaderboard,
+  hostedConfigFromEnv,
+  publishVerifierResult,
+  searchHostedNotes
+} from "./hosted.js";
 
 function printChallengeHelp(cliName) {
   console.log(`Usage: ${cliName} <command>
@@ -27,6 +34,14 @@ Commands:
   leaderboard               Show local leaderboard
   notes add <text>          Add local note
   notes search <query>      Search local notes
+  publish-verification      Publish verifier-result JSON to hosted API
+                           optional: --file <path> --api <url> --token <token>
+  hosted leaderboard        Fetch hosted leaderboard
+                           optional: --api <url> --json
+  hosted notes add <text>   Add hosted note
+                           optional: --api <url> --token <token> --title <title>
+  hosted notes search <q>   Search hosted notes
+                           optional: --api <url> --limit <n>
   export-site               Export local static leaderboard
   help                      Show this help
 `);
@@ -129,6 +144,41 @@ function parseVerifyArgs(args) {
   }
 
   return options;
+}
+
+function parseOptions(args) {
+  const positional = [];
+  const options = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (!arg.startsWith("--")) {
+      positional.push(arg);
+      continue;
+    }
+
+    const key = arg.slice(2);
+    if (key === "json") {
+      options.json = true;
+      continue;
+    }
+
+    const value = args[index + 1];
+    if (!value) throw new Error(`${arg} requires a value`);
+    options[key] = value;
+    index += 1;
+  }
+
+  return { positional, options };
+}
+
+function hostedOptions(spec, options) {
+  const env = hostedConfigFromEnv();
+  return {
+    apiUrl: options.api ?? spec.hosted?.apiUrl ?? env.apiUrl,
+    token: options.token ?? env.token,
+    challengeId: options.challenge ?? spec.id
+  };
 }
 
 async function writeJsonOutput(spec, outputPath, value) {
@@ -302,6 +352,62 @@ async function main(argv = process.argv) {
       console.log(`${note.id} ${note.createdAt} ${note.text}`);
     }
     return;
+  }
+
+  if (command === "publish-verification") {
+    const { options } = parseOptions([subcommand, ...rest].filter(Boolean));
+    const published = await publishVerifierResult({
+      ...hostedOptions(spec, options),
+      file: options.file ?? join(spec.root, ".benchforge", "verifier-result.json")
+    });
+    console.log(`${cliName}: published ${published.status} run ${published.runId}`);
+    console.log(`${cliName}: hosted score ${published.score}`);
+    return;
+  }
+
+  if (command === "hosted" && subcommand === "leaderboard") {
+    const { options } = parseOptions(rest);
+    const leaderboard = await fetchHostedLeaderboard(hostedOptions(spec, options));
+    if (options.json) {
+      console.log(JSON.stringify(leaderboard, null, 2));
+      return;
+    }
+    if (!leaderboard.entries.length) {
+      console.log(`${cliName}: hosted leaderboard is empty`);
+      return;
+    }
+    for (const entry of leaderboard.entries) {
+      console.log(`${entry.rank}. ${entry.score} ${entry.status} ${entry.runId}`);
+    }
+    return;
+  }
+
+  if (command === "hosted" && subcommand === "notes") {
+    const [action, ...noteArgs] = rest;
+    const { positional, options } = parseOptions(noteArgs);
+    if (action === "add") {
+      const body = positional.join(" ").trim();
+      const note = await addHostedNote({
+        ...hostedOptions(spec, options),
+        body,
+        title: options.title,
+        author: options.author
+      });
+      console.log(`${cliName}: added hosted note ${note.id}`);
+      return;
+    }
+    if (action === "search") {
+      const query = positional.join(" ").trim();
+      const result = await searchHostedNotes({
+        ...hostedOptions(spec, options),
+        query,
+        limit: options.limit
+      });
+      for (const note of result.notes) {
+        console.log(`${note.id} ${note.createdAt} ${note.title}: ${note.body}`);
+      }
+      return;
+    }
   }
 
   if (command === "export-site") {

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "benchforge-hosted",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "BENCHFORGE_ALLOW_UNAUTHENTICATED_WRITES": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "benchforge",
+      "database_id": "replace-with-wrangler-d1-create-output"
+    }
+  ]
+}

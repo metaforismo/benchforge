@@ -17,12 +17,19 @@ Benchforge Core
   receipts
   leaderboard
   report export
+  hosted API client
 
 Challenge Pack
   challenge.json
   harness/
   starter/
   SKILL.md
+
+Hosted Layer
+  Cloudflare Worker API
+  D1 metadata database
+  trusted verifier-result ingestion
+  public leaderboard endpoints
 ```
 
 Local results are not public proof. A hosted/community deployment should promote only results reproduced by a trusted verifier.
@@ -120,7 +127,9 @@ The local verifier is intentionally conservative about wording. It can mark a ca
   "challenge": {
     "id": "toyfail",
     "name": "Toyfail",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "scoreDirection": "minimize",
+    "primaryMetric": "time_ms"
   },
   "submission": {
     "id": "sub_...",
@@ -170,3 +179,23 @@ This produces a `promoted` run with `verifier.trusted: true`. Local verifier res
 - score history
 
 The HTML is a static view over the same data and can be uploaded as an artifact, served locally, or later deployed to Pages/Cloudflare.
+
+## Hosted Submission Flow
+
+```text
+GitHub Actions or trusted runner
+  run challenge tests
+  run challenge score
+  toyfail verify --trusted --promote --verifier-kind github-actions --json --output .benchforge/verifier-result.json
+  toyfail publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
+
+Cloudflare Worker
+  require bearer token for writes
+  reject untrusted verifier results
+  store challenge/submission/run metadata in D1
+  expose public leaderboard JSON
+```
+
+This keeps benchmark execution away from the hosted API. D1 stores official metadata, not self-reported local scores.
+
+Direct ECDSA.fail-style CLI submissions can be added later with the same trust boundary: upload editable paths, verify elsewhere, then publish only reproduced results.

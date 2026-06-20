@@ -179,6 +179,8 @@ node ./challenges/${id}/bin/${cli}.js run
 node ./challenges/${id}/bin/${cli}.js submit
 node ./challenges/${id}/bin/${cli}.js verify --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
+node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
+node ./challenges/${id}/bin/${cli}.js hosted leaderboard --api "$BENCHFORGE_API_URL"
 \`\`\`
 
 Local scores are useful for iteration. Public trust requires an independent verifier.
@@ -212,6 +214,7 @@ node ./challenges/${id}/bin/${cli}.js run
 node ./challenges/${id}/bin/${cli}.js submit
 node ./challenges/${id}/bin/${cli}.js verify --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
+node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
 \`\`\`
 
 Only trust a score after tests pass and the CLI records a run.
