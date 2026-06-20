@@ -151,9 +151,15 @@ node ./challenges/toyfail/bin/toyfail.js submit --bundle-output .benchforge/late
 node ./challenges/toyfail/bin/toyfail.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/toyfail/bin/toyfail.js submissions export latest --output .benchforge/latest.bundle.json
 node ./challenges/toyfail/bin/toyfail.js submissions import .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js submissions audit latest --output .benchforge/audit-latest
 ```
 
 `verify` reconstructs the candidate in a temporary clean challenge copy, runs public tests and scoring, and records an `accepted` local run.
+
+`submissions audit` writes a GitHub-friendly directory containing the portable
+bundle, editable files, local metadata, README, and verifier result when one is
+available. This is useful for a `submissions/<id>` branch or for attaching a
+complete artifact to another review system.
 
 `verify --json --output .benchforge/verifier-result.json` emits a stable machine-readable verifier result:
 

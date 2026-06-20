@@ -194,6 +194,66 @@ export async function exportSubmissionBundle(spec, requestedId = "latest", outpu
   };
 }
 
+function auditReadme(spec, submission) {
+  const lines = [
+    `# Benchforge Submission ${submission.id}`,
+    "",
+    `Challenge: ${spec.name} (${spec.id})`,
+    `Version: ${spec.version}`,
+    `Status: ${submission.status}`,
+    `Candidate score: ${submission.score}`,
+    `Bundle hash: ${submission.bundleHash ?? "unknown"}`,
+    "",
+    "## Contents",
+    "",
+    "- `submission.bundle.json`: portable benchforge.submission.v1 bundle",
+    "- `submission.json`: local candidate metadata",
+    "- `files/`: editable files exactly as submitted",
+    "- `verifier-result.json`: verifier result, when this submission has been verified",
+    "",
+    "## Replay",
+    "",
+    "```bash",
+    `${spec.cli} submissions import submission.bundle.json`,
+    `${spec.cli} verify --bundle submission.bundle.json --json --output .benchforge/verifier-result.json`,
+    "```",
+    "",
+    "Local or accepted status is not public proof. Public trust requires a trusted verifier."
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+export async function exportSubmissionAudit(spec, requestedId = "latest", outputDir = null) {
+  const submission = await findSubmission(spec.root, requestedId);
+  if (!submission) {
+    throw new Error("no submission found");
+  }
+
+  const resolvedOutput = outputDir ?? join(getStoreDir(spec.root), "audit", submission.id);
+  await mkdir(resolvedOutput, { recursive: true });
+  await mkdir(join(resolvedOutput, "files"), { recursive: true });
+
+  const bundlePath = submission.bundlePath ?? join(submission.path, "submission.bundle.json");
+  await copyFile(bundlePath, join(resolvedOutput, "submission.bundle.json"));
+  await copyFile(join(submission.path, "submission.json"), join(resolvedOutput, "submission.json"));
+  await cp(join(submission.path, "files"), join(resolvedOutput, "files"), { recursive: true });
+
+  if (submission.acceptedRunId) {
+    const verifierResultPath = join(getStoreDir(spec.root), `${submission.acceptedRunId}.verification.json`);
+    try {
+      await copyFile(verifierResultPath, join(resolvedOutput, "verifier-result.json"));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+
+  await writeFile(join(resolvedOutput, "README.md"), auditReadme(spec, submission), "utf8");
+  return {
+    submission,
+    outputDir: resolvedOutput
+  };
+}
+
 function assertBundleMatchesSpec(spec, bundle) {
   if (!bundle || typeof bundle !== "object") {
     throw new Error("submission bundle must be an object");

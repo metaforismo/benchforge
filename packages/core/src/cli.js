@@ -10,6 +10,7 @@ import { exportReport } from "./report.js";
 import { runDoctor } from "./doctor.js";
 import {
   createSubmission,
+  exportSubmissionAudit,
   exportSubmissionBundle,
   importSubmissionBundle,
   verifySubmission,
@@ -43,6 +44,8 @@ Commands:
                            optional: --trusted --promote --verifier-kind <kind>
   receipt verify <file>     Verify a receipt JSON file
   submissions list          Show local candidate submissions
+  submissions audit [id]    Export a GitHub-friendly audit directory
+                           optional: --output <dir>
   submissions export [id]   Export a portable submission bundle
                            optional: --output <path>
   submissions import <file> Import a portable submission bundle
@@ -409,6 +412,16 @@ async function main(argv = process.argv) {
     for (const submission of submissions) {
       console.log(`${submission.id} ${submission.status} ${submission.score} ${submission.createdAt}`);
     }
+    return;
+  }
+
+  if (command === "submissions" && subcommand === "audit") {
+    const { positional, options } = parseOptions(rest);
+    const id = positional[0] ?? "latest";
+    const outputDir = options.output ? resolveChallengePath(spec, options.output) : null;
+    const exported = await exportSubmissionAudit(spec, id, outputDir);
+    console.log(`${cliName}: exported audit submission ${exported.submission.id}`);
+    console.log(`${cliName}: audit ${exported.outputDir}`);
     return;
   }
 

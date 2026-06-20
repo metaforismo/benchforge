@@ -76,3 +76,31 @@ test("submit --verify packages and verifies a candidate in one command", async (
   assert.equal(verifierResult.result.status, "accepted");
   assert.equal(bundle.schemaVersion, "benchforge.submission.v1");
 });
+
+test("submissions audit exports a GitHub-friendly directory", async () => {
+  const root = await createTempChallenge();
+  await execFileAsync(process.execPath, [
+    cliPath,
+    "submit",
+    "--verify",
+    "--bundle-output",
+    ".benchforge/latest.bundle.json",
+    "--output",
+    ".benchforge/verifier-result.json"
+  ], { cwd: root });
+
+  const result = await execFileAsync(process.execPath, [
+    cliPath,
+    "submissions",
+    "audit",
+    "latest",
+    "--output",
+    ".benchforge/audit-latest"
+  ], { cwd: root });
+  const readme = await readFile(join(root, ".benchforge", "audit-latest", "README.md"), "utf8");
+  const bundle = JSON.parse(await readFile(join(root, ".benchforge", "audit-latest", "submission.bundle.json"), "utf8"));
+
+  assert.match(result.stdout, /clickfail: exported audit submission/);
+  assert.match(readme, /Benchforge Submission/);
+  assert.equal(bundle.schemaVersion, "benchforge.submission.v1");
+});

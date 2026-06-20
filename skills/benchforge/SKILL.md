@@ -64,9 +64,13 @@ For a portable handoff to CI or another verifier:
 <cli> verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 <cli> submissions export latest --output .benchforge/latest.bundle.json
 <cli> submissions import .benchforge/latest.bundle.json
+<cli> submissions audit latest --output .benchforge/audit-latest
 ```
 
 Treat `benchforge.submission.v1` bundles as the replayable artifact. Do not ask a solver to report only a score.
+
+Use `submissions audit` when a result needs a GitHub-friendly artifact directory
+with the bundle, editable files, metadata, and verifier result.
 
 For a trusted CI or owner-controlled verifier:
 

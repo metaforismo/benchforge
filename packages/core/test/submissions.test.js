@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createSubmission,
+  exportSubmissionAudit,
   exportSubmissionBundle,
   importSubmissionBundle,
   isPathAllowed,
@@ -105,6 +106,27 @@ test("submission bundles can be exported, imported, and verified", async () => {
   assert.equal(result.imported.alreadyImported, true);
   assert.equal(result.submission.status, "accepted");
   assert.equal(result.result.submission.id, submission.id);
+});
+
+test("submission audit export writes bundle, files, metadata, and verifier result", async () => {
+  const spec = await createTempChallenge();
+  const submission = await createSubmission(spec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  });
+  const verified = await verifySubmission(spec, submission.id);
+  const exported = await exportSubmissionAudit(spec, submission.id, join(spec.root, ".benchforge", "audit-latest"));
+
+  const readme = await readFile(join(exported.outputDir, "README.md"), "utf8");
+  const bundle = JSON.parse(await readFile(join(exported.outputDir, "submission.bundle.json"), "utf8"));
+  const verifierResult = JSON.parse(await readFile(join(exported.outputDir, "verifier-result.json"), "utf8"));
+  const copiedSolution = await readFile(join(exported.outputDir, "files", "starter", "solution.js"), "utf8");
+
+  assert.equal(exported.submission.id, submission.id);
+  assert.match(readme, new RegExp(submission.id));
+  assert.equal(bundle.bundleHash, submission.bundleHash);
+  assert.equal(verifierResult.result.runId, verified.run.id);
+  assert.match(copiedSolution, /exports.solve/);
 });
 
 test("submission bundle import rejects tampered metadata", async () => {

@@ -118,6 +118,11 @@ toyfail submit
   write submission.bundle.json
   store candidate row
 
+toyfail submissions audit <id>
+  write a GitHub-friendly artifact directory
+  include submission.bundle.json, submission.json, files/, README.md
+  include verifier-result.json when the submission has been verified
+
 toyfail verify <id>
   copy challenge into a temporary clean directory
   apply packaged editable files
@@ -250,7 +255,7 @@ GitHub can also be used as an audit trail:
 ```text
 solver
   produce benchforge.submission.v1 bundle
-  optionally push bundle/files to submissions/<uuid>
+  optionally export audit directory and push it to submissions/<uuid>
 
 trusted verifier
   checks out the submission branch or imports the bundle

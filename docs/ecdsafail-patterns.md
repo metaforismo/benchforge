@@ -101,6 +101,7 @@ Use a database/hosted API when:
 Benchforge should support both:
 
 - portable signed-ish bundles as the neutral artifact,
+- audit directories for GitHub branches or review systems,
 - GitHub branches or commits as an optional audit trail,
 - Cloudflare/D1 as an optional leaderboard and notes index.
 

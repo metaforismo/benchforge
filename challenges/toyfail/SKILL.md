@@ -29,6 +29,7 @@ npm run toyfail:submit:verify
 npm run toyfail:verify:json
 npm run toyfail:verify:trusted
 npm run toyfail:submissions
+npm run toyfail:audit
 npm run toyfail:leaderboard
 npm run toyfail:report
 ```
