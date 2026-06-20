@@ -23,7 +23,7 @@ For public leaderboards, Benchforge is designed around candidate submissions tha
 npm test
 npm run toyfail:run
 npm run toyfail:submit
-npm run toyfail:verify
+npm run toyfail:verify:json
 npm run toyfail:submissions
 npm run toyfail:leaderboard
 npm run toyfail:report
@@ -67,12 +67,22 @@ Cloudflare hosted leaderboards and external verifier runners are the next layer.
 ```bash
 npm run toyfail:run
 npm run toyfail:submit
-npm run toyfail:verify
+npm run toyfail:verify:json
 npm run toyfail:leaderboard
 ```
 
 `submit` packages only the editable files declared by `challenge.json`.
 
 `verify` reconstructs the candidate in a temporary clean challenge copy, runs public tests and scoring, and records an `accepted` local run.
+
+`verify --json --output .benchforge/verifier-result.json` emits a stable machine-readable verifier result:
+
+```json
+{
+  "schemaVersion": "benchforge.verification.v1",
+  "verifier": { "kind": "local-public", "trusted": false },
+  "result": { "status": "accepted", "score": 12.3 }
+}
+```
 
 This is still local verification, not public trust. A future trusted runner can reuse the same package shape and mark results as `verified`, `promoted`, or `replicated`.

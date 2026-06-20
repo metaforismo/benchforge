@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { loadChallengeSpec } from "./spec.js";
 import { runScore, runTest } from "./runner.js";
 import { appendNote, appendRun, listNotes, listRuns } from "./store.js";
 import { rankRuns } from "./leaderboard.js";
-import { createReceipt } from "./receipts.js";
+import { createReceipt, verifyReceipt } from "./receipts.js";
 import { exportReport } from "./report.js";
 import { createSubmission, verifySubmission } from "./submissions.js";
 import { listSubmissions } from "./store.js";
@@ -18,7 +18,9 @@ Commands:
   test                      Run public tests only
   score                     Run score command only
   submit                    Package current editable files as a candidate
-  verify [submission-id]    Verify candidate locally with public checks
+  verify [id] [--json]      Verify candidate locally with public checks
+                           optional: --output <path>
+  receipt verify <file>     Verify a receipt JSON file
   submissions list          Show local candidate submissions
   leaderboard               Show local leaderboard
   notes add <text>          Add local note
@@ -30,6 +32,41 @@ Commands:
 
 function getChallengeRoot() {
   return process.env.BENCHFORGE_CHALLENGE_ROOT || process.cwd();
+}
+
+function parseVerifyArgs(args) {
+  const options = {
+    id: "latest",
+    json: false,
+    output: null
+  };
+  let idWasSet = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      options.json = true;
+    } else if (arg === "--output") {
+      const output = args[index + 1];
+      if (!output) throw new Error("--output requires a path");
+      options.output = output;
+      index += 1;
+    } else if (!idWasSet) {
+      options.id = arg;
+      idWasSet = true;
+    } else {
+      throw new Error(`unexpected verify argument: ${arg}`);
+    }
+  }
+
+  return options;
+}
+
+async function writeJsonOutput(spec, outputPath, value) {
+  const resolved = outputPath.startsWith("/") ? outputPath : resolve(spec.root, outputPath);
+  await mkdir(dirname(resolved), { recursive: true });
+  await writeFile(resolved, JSON.stringify(value, null, 2), "utf8");
+  return resolved;
 }
 
 async function main(argv = process.argv) {
@@ -105,11 +142,34 @@ async function main(argv = process.argv) {
   }
 
   if (command === "verify") {
-    const requestedId = subcommand || "latest";
-    const result = await verifySubmission(spec, requestedId);
-    console.log(`${cliName}: accepted submission ${result.submission.id}`);
-    console.log(`${cliName}: accepted run ${result.run.id}`);
-    console.log(`${cliName}: score ${result.run.score}`);
+    const options = parseVerifyArgs([subcommand, ...rest].filter(Boolean));
+    const verified = await verifySubmission(spec, options.id);
+    if (options.output) {
+      const outputPath = await writeJsonOutput(spec, options.output, verified.result);
+      if (!options.json) {
+        console.log(`${cliName}: wrote verifier result ${outputPath}`);
+      }
+    }
+    if (options.json) {
+      console.log(JSON.stringify(verified.result, null, 2));
+      return;
+    }
+    console.log(`${cliName}: accepted submission ${verified.submission.id}`);
+    console.log(`${cliName}: accepted run ${verified.run.id}`);
+    console.log(`${cliName}: score ${verified.run.score}`);
+    return;
+  }
+
+  if (command === "receipt" && subcommand === "verify") {
+    const receiptPath = rest[0];
+    if (!receiptPath) throw new Error("receipt verify requires a file path");
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    if (!verifyReceipt(receipt)) {
+      console.log(`${cliName}: receipt invalid`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log(`${cliName}: receipt valid`);
     return;
   }
 

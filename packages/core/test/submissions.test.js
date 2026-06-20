@@ -10,6 +10,7 @@ import {
   verifySubmission
 } from "../src/submissions.js";
 import { listRuns, listSubmissions } from "../src/store.js";
+import { verifyReceipt } from "../src/receipts.js";
 
 async function createTempChallenge() {
   const root = await mkdtemp(join(tmpdir(), "benchforge-submission-"));
@@ -93,6 +94,10 @@ test("verifySubmission runs public checks from a packaged candidate", async () =
 
   assert.equal(result.submission.status, "accepted");
   assert.equal(result.run.status, "accepted");
+  assert.equal(result.result.schemaVersion, "benchforge.verification.v1");
+  assert.equal(result.result.result.status, "accepted");
+  assert.equal(result.result.result.receiptHash, result.receipt.receiptHash);
+  assert.equal(verifyReceipt(result.result.receipt), true);
   assert.equal(runs.length, 1);
   assert.equal(submissions[0].acceptedRunId, result.run.id);
 });

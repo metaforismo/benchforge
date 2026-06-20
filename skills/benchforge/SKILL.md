@@ -20,7 +20,7 @@ Use the branded CLI for the challenge:
 ```bash
 <challenge-cli> run
 <challenge-cli> submit
-<challenge-cli> verify
+<challenge-cli> verify --json --output .benchforge/verifier-result.json
 <challenge-cli> submissions list
 <challenge-cli> leaderboard
 <challenge-cli> notes search "<query>"

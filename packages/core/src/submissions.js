@@ -188,5 +188,35 @@ export async function verifySubmission(spec, requestedId = "latest") {
     acceptedMetrics: run.metrics
   });
 
-  return { submission: accepted, run, receipt };
+  const result = {
+    schemaVersion: "benchforge.verification.v1",
+    createdAt: nowIso(),
+    challenge: {
+      id: spec.id,
+      name: spec.name,
+      version: spec.version
+    },
+    submission: {
+      id: accepted.id,
+      status: accepted.status,
+      candidateScore: submission.score,
+      candidateMetrics: submission.metrics,
+      files: manifest.files
+    },
+    verifier: {
+      kind: "local-public",
+      trusted: false
+    },
+    result: {
+      status: "accepted",
+      runId: run.id,
+      score: run.score,
+      metrics: run.metrics,
+      receiptHash: receipt.receiptHash
+    },
+    receipt
+  };
+
+  await writeFile(join(getStoreDir(spec.root), `${run.id}.verification.json`), JSON.stringify(result, null, 2), "utf8");
+  return { submission: accepted, run, receipt, result };
 }
