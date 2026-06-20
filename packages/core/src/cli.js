@@ -9,8 +9,9 @@ import { createReceipt, verifyReceipt } from "./receipts.js";
 import { exportReport } from "./report.js";
 import { createSubmission, verifySubmission } from "./submissions.js";
 import { listSubmissions } from "./store.js";
+import { createChallenge } from "./create.js";
 
-function printHelp(cliName) {
+function printChallengeHelp(cliName) {
   console.log(`Usage: ${cliName} <command>
 
 Commands:
@@ -30,8 +31,59 @@ Commands:
 `);
 }
 
+function printFactoryHelp() {
+  console.log(`Usage: benchforge <command>
+
+Commands:
+  create <id>               Create a new branded challenge pack
+                            optional: --name <name> --cli <cli> --root <path> --force
+  help                      Show this help
+`);
+}
+
 function getChallengeRoot() {
   return process.env.BENCHFORGE_CHALLENGE_ROOT || process.cwd();
+}
+
+function parseCreateArgs(args) {
+  const id = args[0];
+  if (!id || id.startsWith("--")) {
+    throw new Error("create requires a challenge id");
+  }
+
+  const options = {
+    id,
+    name: null,
+    cli: null,
+    root: process.cwd(),
+    force: false
+  };
+
+  for (let index = 1; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--name") {
+      const name = args[index + 1];
+      if (!name) throw new Error("--name requires a value");
+      options.name = name;
+      index += 1;
+    } else if (arg === "--cli") {
+      const cli = args[index + 1];
+      if (!cli) throw new Error("--cli requires a value");
+      options.cli = cli;
+      index += 1;
+    } else if (arg === "--root") {
+      const root = args[index + 1];
+      if (!root) throw new Error("--root requires a value");
+      options.root = resolve(root);
+      index += 1;
+    } else if (arg === "--force") {
+      options.force = true;
+    } else {
+      throw new Error(`unexpected create argument: ${arg}`);
+    }
+  }
+
+  return options;
 }
 
 function parseVerifyArgs(args) {
@@ -70,12 +122,29 @@ async function writeJsonOutput(spec, outputPath, value) {
 }
 
 async function main(argv = process.argv) {
-  const spec = await loadChallengeSpec(getChallengeRoot());
-  const cliName = spec.cli;
   const [command, subcommand, ...rest] = argv.slice(2);
 
+  if (command === "create") {
+    const created = await createChallenge(parseCreateArgs([subcommand, ...rest].filter(Boolean)));
+    console.log(`benchforge: created ${created.name} at ${created.root}`);
+    console.log(`benchforge: run with ${created.command}`);
+    return;
+  }
+
+  let spec;
+  try {
+    spec = await loadChallengeSpec(getChallengeRoot());
+  } catch (error) {
+    if (error.code === "ENOENT" && (!command || command === "help")) {
+      printFactoryHelp();
+      return;
+    }
+    throw error;
+  }
+  const cliName = spec.cli;
+
   if (!command || command === "help") {
-    printHelp(cliName);
+    printChallengeHelp(cliName);
     return;
   }
 

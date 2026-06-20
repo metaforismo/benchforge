@@ -48,6 +48,24 @@ replicated
 
 The MVP implements local runs and local receipts. Hosted verification will add accepted, verified, promoted, and replicated states.
 
+## Factory Flow
+
+```text
+benchforge create grpoarena --name "GRPO Arena"
+  create challenges/grpoarena/challenge.json
+  create challenges/grpoarena/bin/grpoarena.js
+  create starter solution
+  create public harness
+  create challenge README and SKILL.md
+
+node ./challenges/grpoarena/bin/grpoarena.js run
+  load challenges/grpoarena/challenge.json
+  run that pack's harness
+  store local run under challenges/grpoarena/.benchforge
+```
+
+The generated CLI wrapper is thin, but the generated challenge pack changes the actual benchmark behavior through its spec, editable paths, and harness.
+
 ## Local Submission Flow
 
 ```text

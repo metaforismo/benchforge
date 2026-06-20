@@ -28,6 +28,13 @@ Use the branded CLI for the challenge:
 <challenge-cli> export-site
 ```
 
+To create a new challenge from the factory:
+
+```bash
+node ./packages/core/src/cli.js create <challenge-id> --name "<Challenge Name>"
+node ./challenges/<challenge-id>/bin/<challenge-id>.js run
+```
+
 ## Trust Model
 
 Local runs are not public proof. A public leaderboard should use verified or promoted runs produced by a trusted verifier.

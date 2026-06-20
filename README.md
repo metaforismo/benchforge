@@ -35,6 +35,17 @@ Open the exported report:
 challenges/toyfail/.benchforge/site/index.html
 ```
 
+## Create A New Challenge
+
+```bash
+node ./packages/core/src/cli.js create grpoarena --name "GRPO Arena"
+node ./challenges/grpoarena/bin/grpoarena.js run
+node ./challenges/grpoarena/bin/grpoarena.js submit
+node ./challenges/grpoarena/bin/grpoarena.js verify --json --output .benchforge/verifier-result.json
+```
+
+That generated CLI is real: it loads the shared Benchforge engine with the generated `challenges/grpoarena/challenge.json`.
+
 ## Branded CLIs
 
 Each challenge can have its own CLI:
@@ -53,6 +64,7 @@ This repository starts with a local-first MVP:
 
 - shared core engine
 - `toyfail` demo challenge
+- challenge generator with branded CLI wrappers
 - local notes
 - local candidate submissions
 - local public-check verification

@@ -19,6 +19,8 @@ jobs:
       - run: npm run toyfail:verify:json
       - run: npm run toyfail:submissions
       - run: npm run toyfail:leaderboard
+      - run: node ./packages/core/src/cli.js create ci-demo --name "CI Demo"
+      - run: node ./challenges/ci-demo/bin/ci-demo.js run
       - uses: actions/upload-artifact@v4
         with:
           name: toyfail-verifier-result
