@@ -69,6 +69,8 @@ BENCHFORGE_API_URL=https://your-worker.workers.dev
 BENCHFORGE_API_TOKEN=<same value as BENCHFORGE_RUNNER_TOKEN>
 ```
 
+Keep `BENCHFORGE_API_TOKEN` only in owner-controlled runners. Do not give it to public solvers or local agents you do not trust. The hosted API treats that token as authority to publish trusted verifier results.
+
 The default CI workflow already contains an optional manual publish step. It only runs on `workflow_dispatch` and only when both secrets exist.
 
 Manual command:

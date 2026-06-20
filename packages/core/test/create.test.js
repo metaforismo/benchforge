@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { createChallenge } from "../src/create.js";
+
+const execFileAsync = promisify(execFile);
 
 test("createChallenge creates a branded challenge pack", async () => {
   const root = await mkdtemp(join(tmpdir(), "benchforge-create-"));
@@ -23,6 +27,37 @@ test("createChallenge creates a branded challenge pack", async () => {
   assert.match(wrapper, /BENCHFORGE_CHALLENGE_ROOT/);
   assert.match(skill, /^---\nname: grpoarena/m);
   assert.match(skill, /GRPO Arena Agent Skill/);
+});
+
+test("createChallenge wrappers run outside the Benchforge repo", async () => {
+  const root = await mkdtemp(join(tmpdir(), "benchforge-create-run-"));
+  await createChallenge({
+    id: "standalone-ish",
+    name: "Standalone Ish",
+    root
+  });
+
+  const wrapper = join(root, "challenges", "standalone-ish", "bin", "standalone-ish.js");
+  const result = await execFileAsync(process.execPath, [wrapper, "run"], { cwd: root });
+
+  assert.match(result.stdout, /standalone-ish: 32 public correctness cases passed/);
+  assert.match(result.stdout, /standalone-ish: local run/);
+});
+
+test("createChallenge wrappers stay portable inside a Benchforge repo", async () => {
+  const root = await mkdtemp(join(tmpdir(), "benchforge-create-portable-"));
+  await mkdir(join(root, "packages", "core", "src"), { recursive: true });
+  await writeFile(join(root, "packages", "core", "src", "cli.js"), "");
+
+  await createChallenge({
+    id: "portable-ish",
+    name: "Portable Ish",
+    root
+  });
+
+  const wrapper = await readFile(join(root, "challenges", "portable-ish", "bin", "portable-ish.js"), "utf8");
+  assert.equal(wrapper.includes(process.cwd()), false);
+  assert.match(wrapper, /\.\.\/\.\.\/\.\.\/packages\/core\/src\/cli\.js/);
 });
 
 test("createChallenge supports separate cli name", async () => {

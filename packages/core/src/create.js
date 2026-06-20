@@ -1,7 +1,9 @@
 import { mkdir, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const identifierPattern = /^[a-z][a-z0-9-]*$/;
+const coreCliPath = resolve(dirname(fileURLToPath(import.meta.url)), "cli.js");
 
 function titleFromId(id) {
   return id
@@ -51,13 +53,38 @@ export async function createChallenge(options) {
   await mkdir(join(challengeRoot, "starter"), { recursive: true });
   await mkdir(join(challengeRoot, "harness"), { recursive: true });
 
+  const rootHasBenchforgeCore = await exists(join(root, "packages", "core", "src", "cli.js"));
+  const localCoreFallback = rootHasBenchforgeCore ? "" : `,\n  ${JSON.stringify(coreCliPath)}`;
+
   await writeText(join(challengeRoot, "bin", `${cli}.js`), `#!/usr/bin/env node
+import { access } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 process.env.BENCHFORGE_CHALLENGE_ROOT = resolve(here, "..");
-await import("../../../packages/core/src/cli.js");
+
+const coreCandidates = [
+  resolve(here, "../../../packages/core/src/cli.js"),
+  process.env.BENCHFORGE_CORE_CLI${localCoreFallback}
+].filter(Boolean);
+
+let lastError = null;
+for (const candidate of coreCandidates) {
+  try {
+    await access(candidate);
+  } catch (error) {
+    lastError = error;
+    continue;
+  }
+  await import(pathToFileURL(candidate).href);
+  lastError = null;
+  break;
+}
+
+if (lastError) {
+  throw new Error("Could not find Benchforge core CLI. Set BENCHFORGE_CORE_CLI or create challenges inside a Benchforge repo.");
+}
 `);
 
   await writeText(join(challengeRoot, "challenge.json"), `${JSON.stringify({

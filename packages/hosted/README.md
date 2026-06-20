@@ -67,3 +67,5 @@ node ./challenges/toyfail/bin/toyfail.js hosted leaderboard
 Do not publish local-only results to the public leaderboard. The Worker rejects untrusted verifier results and accepts only `verified`, `promoted`, or `replicated` statuses from a caller that knows `BENCHFORGE_RUNNER_TOKEN`.
 
 That keeps the expensive benchmark off the Worker while still making the public leaderboard hard to cheat: the public API stores results from a trusted reproducible runner, not self-reported scores.
+
+Keep `BENCHFORGE_RUNNER_TOKEN` in owner-controlled CI or verifier infrastructure only. If a solver has that token, they can publish results as trusted.
