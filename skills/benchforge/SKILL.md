@@ -19,6 +19,9 @@ Use the branded CLI for the challenge:
 
 ```bash
 <challenge-cli> run
+<challenge-cli> submit
+<challenge-cli> verify
+<challenge-cli> submissions list
 <challenge-cli> leaderboard
 <challenge-cli> notes search "<query>"
 <challenge-cli> notes add "<note>"
@@ -28,6 +31,8 @@ Use the branded CLI for the challenge:
 ## Trust Model
 
 Local runs are not public proof. A public leaderboard should use verified or promoted runs produced by a trusted verifier.
+
+Local `submit` and `verify` commands create candidate packages and replay them through public checks. This is useful before remote verification, but it is still not trusted public proof.
 
 ## Safety
 

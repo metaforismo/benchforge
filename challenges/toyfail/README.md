@@ -12,6 +12,9 @@ Run:
 
 ```bash
 npm run toyfail:run
+npm run toyfail:submit
+npm run toyfail:verify
+npm run toyfail:submissions
 npm run toyfail:leaderboard
 npm run toyfail:report
 ```

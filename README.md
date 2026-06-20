@@ -22,6 +22,9 @@ For public leaderboards, Benchforge is designed around candidate submissions tha
 ```bash
 npm test
 npm run toyfail:run
+npm run toyfail:submit
+npm run toyfail:verify
+npm run toyfail:submissions
 npm run toyfail:leaderboard
 npm run toyfail:report
 ```
@@ -51,8 +54,25 @@ This repository starts with a local-first MVP:
 - shared core engine
 - `toyfail` demo challenge
 - local notes
+- local candidate submissions
+- local public-check verification
 - local leaderboard
 - local static report
 - GitHub Actions test baseline
 
 Cloudflare hosted leaderboards and external verifier runners are the next layer.
+
+## Local Submission Loop
+
+```bash
+npm run toyfail:run
+npm run toyfail:submit
+npm run toyfail:verify
+npm run toyfail:leaderboard
+```
+
+`submit` packages only the editable files declared by `challenge.json`.
+
+`verify` reconstructs the candidate in a temporary clean challenge copy, runs public tests and scoring, and records an `accepted` local run.
+
+This is still local verification, not public trust. A future trusted runner can reuse the same package shape and mark results as `verified`, `promoted`, or `replicated`.

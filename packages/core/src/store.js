@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -29,6 +29,11 @@ async function readJsonLines(path) {
     if (error.code === "ENOENT") return [];
     throw error;
   }
+}
+
+async function writeJsonLines(path, values) {
+  const body = values.map((value) => JSON.stringify(value)).join("\n");
+  await writeFile(path, body.length > 0 ? `${body}\n` : "", "utf8");
 }
 
 export async function appendRun(root, run) {
@@ -66,4 +71,37 @@ export async function listNotes(root, query = "") {
     const text = `${note.text ?? ""} ${(note.tags ?? []).join(" ")}`.toLowerCase();
     return text.includes(needle);
   });
+}
+
+export async function appendSubmission(root, submission) {
+  await ensureStore(root);
+  const record = {
+    id: `sub_${randomUUID()}`,
+    createdAt: nowIso(),
+    status: "candidate",
+    ...submission
+  };
+  await appendJsonLine(join(getStoreDir(root), "submissions.jsonl"), record);
+  return record;
+}
+
+export async function listSubmissions(root) {
+  return readJsonLines(join(getStoreDir(root), "submissions.jsonl"));
+}
+
+export async function updateSubmission(root, id, patch) {
+  await ensureStore(root);
+  const path = join(getStoreDir(root), "submissions.jsonl");
+  const submissions = await readJsonLines(path);
+  const index = submissions.findIndex((submission) => submission.id === id);
+  if (index === -1) {
+    throw new Error(`submission not found: ${id}`);
+  }
+  submissions[index] = {
+    ...submissions[index],
+    ...patch,
+    updatedAt: nowIso()
+  };
+  await writeJsonLines(path, submissions);
+  return submissions[index];
 }

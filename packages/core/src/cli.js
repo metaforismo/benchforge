@@ -7,6 +7,8 @@ import { appendNote, appendRun, listNotes, listRuns } from "./store.js";
 import { rankRuns } from "./leaderboard.js";
 import { createReceipt } from "./receipts.js";
 import { exportReport } from "./report.js";
+import { createSubmission, verifySubmission } from "./submissions.js";
+import { listSubmissions } from "./store.js";
 
 function printHelp(cliName) {
   console.log(`Usage: ${cliName} <command>
@@ -15,6 +17,9 @@ Commands:
   run                       Run tests, score, store local run
   test                      Run public tests only
   score                     Run score command only
+  submit                    Package current editable files as a candidate
+  verify [submission-id]    Verify candidate locally with public checks
+  submissions list          Show local candidate submissions
   leaderboard               Show local leaderboard
   notes add <text>          Add local note
   notes search <query>      Search local notes
@@ -79,6 +84,44 @@ async function main(argv = process.argv) {
     await writeFile(join(spec.root, ".benchforge", `${run.id}.receipt.json`), JSON.stringify(receipt, null, 2));
     console.log(`${cliName}: local run ${run.id}`);
     console.log(`${cliName}: score ${run.score}`);
+    return;
+  }
+
+  if (command === "submit") {
+    const testResult = await runTest(spec);
+    process.stdout.write(testResult.stdout);
+    process.stderr.write(testResult.stderr);
+    if (testResult.exitCode !== 0) {
+      process.exitCode = testResult.exitCode;
+      return;
+    }
+
+    const scoreResult = await runScore(spec);
+    const submission = await createSubmission(spec, scoreResult);
+    console.log(`${cliName}: candidate submission ${submission.id}`);
+    console.log(`${cliName}: score ${submission.score}`);
+    console.log(`${cliName}: package ${submission.path}`);
+    return;
+  }
+
+  if (command === "verify") {
+    const requestedId = subcommand || "latest";
+    const result = await verifySubmission(spec, requestedId);
+    console.log(`${cliName}: accepted submission ${result.submission.id}`);
+    console.log(`${cliName}: accepted run ${result.run.id}`);
+    console.log(`${cliName}: score ${result.run.score}`);
+    return;
+  }
+
+  if (command === "submissions" && subcommand === "list") {
+    const submissions = await listSubmissions(spec.root);
+    if (submissions.length === 0) {
+      console.log(`${cliName}: no local submissions yet`);
+      return;
+    }
+    for (const submission of submissions) {
+      console.log(`${submission.id} ${submission.status} ${submission.score} ${submission.createdAt}`);
+    }
     return;
   }
 

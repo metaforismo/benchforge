@@ -12,6 +12,9 @@
     "toyfail": "node ./challenges/toyfail/bin/toyfail.js",
     "toyfail:run": "node ./challenges/toyfail/bin/toyfail.js run",
     "toyfail:score": "node ./challenges/toyfail/bin/toyfail.js score",
+    "toyfail:submit": "node ./challenges/toyfail/bin/toyfail.js submit",
+    "toyfail:verify": "node ./challenges/toyfail/bin/toyfail.js verify",
+    "toyfail:submissions": "node ./challenges/toyfail/bin/toyfail.js submissions list",
     "toyfail:leaderboard": "node ./challenges/toyfail/bin/toyfail.js leaderboard",
     "toyfail:report": "node ./challenges/toyfail/bin/toyfail.js export-site"
   },

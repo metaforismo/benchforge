@@ -15,4 +15,7 @@ jobs:
           node-version: "20"
       - run: npm test
       - run: npm run toyfail:run
+      - run: npm run toyfail:submit
+      - run: npm run toyfail:verify
+      - run: npm run toyfail:submissions
       - run: npm run toyfail:leaderboard
