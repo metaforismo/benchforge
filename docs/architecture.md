@@ -66,6 +66,28 @@ node ./challenges/grpoarena/bin/grpoarena.js run
 
 The generated CLI wrapper is thin, but the generated challenge pack changes the actual benchmark behavior through its spec, editable paths, and harness.
 
+## Skill Layer
+
+Benchforge uses two repository-level skills:
+
+```text
+skills/benchmark-designer
+  Use before implementation.
+  Ask high-value design questions.
+  Select benchmark archetype.
+  Threat-model cheating.
+  Produce challenge contract.
+
+skills/benchforge
+  Use inside a challenge.
+  Read challenge.json.
+  Respect editable and forbidden paths.
+  Run baseline, notes, submit, verify, leaderboard.
+  Report trust status precisely.
+```
+
+Each generated challenge also gets a challenge-specific `SKILL.md` so an agent can be pointed directly at the challenge.
+
 ## Local Submission Flow
 
 ```text

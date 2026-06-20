@@ -46,6 +46,21 @@ node ./challenges/grpoarena/bin/grpoarena.js verify --json --output .benchforge/
 
 That generated CLI is real: it loads the shared Benchforge engine with the generated `challenges/grpoarena/challenge.json`.
 
+## Skills
+
+The repository includes two Codex skills:
+
+- `skills/benchmark-designer`: use before creating a challenge. It asks the benchmark-design questions around artifact shape, score, hidden checks, verifier environment, and cheat risks.
+- `skills/benchforge`: use inside an existing Benchforge challenge. It guides agents through baseline runs, allowed edits, notes, submit, verify, and precise trust language.
+
+Generated challenges also include a challenge-specific `SKILL.md`, such as `challenges/toyfail/SKILL.md`.
+
+Validate the skills with:
+
+```bash
+npm run skills:validate
+```
+
 ## Branded CLIs
 
 Each challenge can have its own CLI:

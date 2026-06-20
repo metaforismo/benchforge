@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "skills:validate": "node --test packages/core/test/skills.test.js",
     "toyfail": "node ./challenges/toyfail/bin/toyfail.js",
     "toyfail:run": "node ./challenges/toyfail/bin/toyfail.js run",
     "toyfail:score": "node ./challenges/toyfail/bin/toyfail.js score",

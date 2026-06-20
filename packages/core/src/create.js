@@ -184,7 +184,12 @@ node ./challenges/${id}/bin/${cli}.js leaderboard
 Local scores are useful for iteration. Public trust requires an independent verifier.
 `);
 
-  await writeText(join(challengeRoot, "SKILL.md"), `# ${name} Agent Skill
+  await writeText(join(challengeRoot, "SKILL.md"), `---
+name: ${id}
+description: Work on the ${name} Benchforge challenge. Use when optimizing ${name}, running the ${cli} CLI, submitting candidate packages, verifying verifier-result JSON, reading notes, or respecting this challenge's editable and forbidden paths.
+---
+
+# ${name} Agent Skill
 
 You are working on ${name}, a local-first Benchforge challenge.
 

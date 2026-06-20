@@ -1,0 +1,4 @@
+interface:
+  display_name: "Benchmark Designer"
+  short_description: "Design anti-cheat benchmark arenas"
+  default_prompt: "Use $benchmark-designer to turn this research area into a verifiable benchmark challenge."

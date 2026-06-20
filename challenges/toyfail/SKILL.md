@@ -1,3 +1,8 @@
+---
+name: toyfail
+description: Work on the Toyfail Benchforge challenge. Use when optimizing Toyfail's starter solution, running the toyfail CLI, submitting candidate packages, verifying verifier-result JSON, reading notes, or respecting Toyfail editable and forbidden paths.
+---
+
 # Toyfail Agent Skill
 
 You are working on Toyfail, a local-first Benchforge challenge.

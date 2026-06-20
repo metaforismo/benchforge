@@ -1,0 +1,4 @@
+interface:
+  display_name: "Benchforge"
+  short_description: "Run and improve benchmark challenges"
+  default_prompt: "Use $benchforge to run, improve, submit, and verify this benchmark challenge."
