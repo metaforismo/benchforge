@@ -19,8 +19,9 @@ Commands:
   test                      Run public tests only
   score                     Run score command only
   submit                    Package current editable files as a candidate
-  verify [id] [--json]      Verify candidate locally with public checks
+  verify [id] [--json]      Verify candidate with public checks
                            optional: --output <path>
+                           optional: --trusted --promote --verifier-kind <kind>
   receipt verify <file>     Verify a receipt JSON file
   submissions list          Show local candidate submissions
   leaderboard               Show local leaderboard
@@ -90,7 +91,10 @@ function parseVerifyArgs(args) {
   const options = {
     id: "latest",
     json: false,
-    output: null
+    output: null,
+    trusted: false,
+    promote: false,
+    verifierKind: null
   };
   let idWasSet = false;
 
@@ -103,12 +107,25 @@ function parseVerifyArgs(args) {
       if (!output) throw new Error("--output requires a path");
       options.output = output;
       index += 1;
+    } else if (arg === "--trusted") {
+      options.trusted = true;
+    } else if (arg === "--promote") {
+      options.promote = true;
+    } else if (arg === "--verifier-kind") {
+      const verifierKind = args[index + 1];
+      if (!verifierKind) throw new Error("--verifier-kind requires a value");
+      options.verifierKind = verifierKind;
+      index += 1;
     } else if (!idWasSet) {
       options.id = arg;
       idWasSet = true;
     } else {
       throw new Error(`unexpected verify argument: ${arg}`);
     }
+  }
+
+  if (options.promote && !options.trusted) {
+    throw new Error("--promote requires --trusted");
   }
 
   return options;
@@ -212,7 +229,11 @@ async function main(argv = process.argv) {
 
   if (command === "verify") {
     const options = parseVerifyArgs([subcommand, ...rest].filter(Boolean));
-    const verified = await verifySubmission(spec, options.id);
+    const verified = await verifySubmission(spec, options.id, {
+      trusted: options.trusted,
+      promote: options.promote,
+      verifierKind: options.verifierKind
+    });
     if (options.output) {
       const outputPath = await writeJsonOutput(spec, options.output, verified.result);
       if (!options.json) {
@@ -284,7 +305,7 @@ async function main(argv = process.argv) {
   }
 
   if (command === "export-site") {
-    const outputPath = await exportReport(spec, await listRuns(spec.root));
+    const outputPath = await exportReport(spec, await listRuns(spec.root), await listSubmissions(spec.root));
     console.log(`${cliName}: exported ${outputPath}`);
     return;
   }

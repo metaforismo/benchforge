@@ -131,7 +131,11 @@ async function applySubmissionFiles(tempRoot, submission) {
   }
 }
 
-export async function verifySubmission(spec, requestedId = "latest") {
+export async function verifySubmission(spec, requestedId = "latest", options = {}) {
+  const trusted = options.trusted === true;
+  const promoted = options.promote === true;
+  const status = trusted ? (promoted ? "promoted" : "verified") : "accepted";
+  const verifierKind = options.verifierKind ?? (trusted ? "trusted-runner" : "local-public");
   const submission = requestedId === "latest"
     ? await latestSubmission(spec.root)
     : (await listSubmissions(spec.root)).find((candidate) => candidate.id === requestedId);
@@ -165,7 +169,7 @@ export async function verifySubmission(spec, requestedId = "latest") {
   const run = await appendRun(spec.root, {
     challengeId: spec.id,
     challengeVersion: spec.version,
-    status: "accepted",
+    status,
     sourceSubmissionId: submission.id,
     score: scoreResult.score,
     metrics: scoreResult.metrics
@@ -176,13 +180,13 @@ export async function verifySubmission(spec, requestedId = "latest") {
     runId: run.id,
     score: run.score,
     metrics: run.metrics,
-    verifier: "local-public"
+    verifier: verifierKind
   });
   await writeFile(join(getStoreDir(spec.root), `${run.id}.receipt.json`), JSON.stringify(receipt, null, 2), "utf8");
 
   const accepted = await updateSubmission(spec.root, submission.id, {
-    status: "accepted",
-    acceptedAt: nowIso(),
+    status,
+    [`${status}At`]: nowIso(),
     acceptedRunId: run.id,
     acceptedScore: run.score,
     acceptedMetrics: run.metrics
@@ -204,11 +208,11 @@ export async function verifySubmission(spec, requestedId = "latest") {
       files: manifest.files
     },
     verifier: {
-      kind: "local-public",
-      trusted: false
+      kind: verifierKind,
+      trusted
     },
     result: {
-      status: "accepted",
+      status,
       runId: run.id,
       score: run.score,
       metrics: run.metrics,

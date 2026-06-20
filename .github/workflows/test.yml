@@ -16,13 +16,19 @@ jobs:
       - run: npm test
       - run: npm run toyfail:run
       - run: npm run toyfail:submit
-      - run: npm run toyfail:verify:json
+      - run: npm run toyfail:verify:trusted
       - run: npm run toyfail:submissions
       - run: npm run toyfail:leaderboard
+      - run: npm run toyfail:report
       - run: node ./packages/core/src/cli.js create ci-demo --name "CI Demo"
       - run: node ./challenges/ci-demo/bin/ci-demo.js run
       - uses: actions/upload-artifact@v4
         with:
           name: toyfail-verifier-result
           path: challenges/toyfail/.benchforge/verifier-result.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: toyfail-leaderboard-site
+          path: challenges/toyfail/.benchforge/site
           if-no-files-found: error

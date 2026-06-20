@@ -16,6 +16,7 @@
     "toyfail:submit": "node ./challenges/toyfail/bin/toyfail.js submit",
     "toyfail:verify": "node ./challenges/toyfail/bin/toyfail.js verify",
     "toyfail:verify:json": "node ./challenges/toyfail/bin/toyfail.js verify --json --output .benchforge/verifier-result.json",
+    "toyfail:verify:trusted": "node ./challenges/toyfail/bin/toyfail.js verify --json --trusted --promote --verifier-kind github-actions --output .benchforge/verifier-result.json",
     "toyfail:submissions": "node ./challenges/toyfail/bin/toyfail.js submissions list",
     "toyfail:leaderboard": "node ./challenges/toyfail/bin/toyfail.js leaderboard",
     "toyfail:report": "node ./challenges/toyfail/bin/toyfail.js export-site"

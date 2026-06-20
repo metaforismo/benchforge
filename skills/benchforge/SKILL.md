@@ -47,6 +47,13 @@ Use the full loop before reporting a result:
 <cli> leaderboard
 ```
 
+For a trusted CI or owner-controlled verifier:
+
+```bash
+<cli> verify --json --trusted --promote --verifier-kind github-actions --output .benchforge/verifier-result.json
+<cli> export-site
+```
+
 Report:
 
 - local score
@@ -54,6 +61,7 @@ Report:
 - run id
 - submission id
 - whether the result is only local/accepted or truly remote verified
+- whether `verifier.trusted` is true in the verifier result JSON
 
 ## Trust Language
 
@@ -78,4 +86,3 @@ node ./challenges/<challenge-id>/bin/<challenge-id>.js run
 ```
 
 Use `$benchmark-designer` first when the problem, scoring rule, or anti-cheat design is still unclear.
-

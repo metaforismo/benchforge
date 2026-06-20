@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { rankRuns } from "./leaderboard.js";
+import { buildLeaderboardData } from "./leaderboard-data.js";
 
 function escapeHtml(value) {
   return String(value)
@@ -10,22 +10,40 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-export async function exportReport(spec, runs) {
-  const ranked = rankRuns(spec, runs);
+function formatScore(value) {
+  if (typeof value !== "number") return "n/a";
+  return Number.isInteger(value) ? String(value) : value.toFixed(3);
+}
+
+export async function exportReport(spec, runs, submissions = []) {
+  const data = buildLeaderboardData(spec, runs, submissions);
   const outputDir = join(spec.root, ".benchforge", "site");
   await mkdir(outputDir, { recursive: true });
   const outputPath = join(outputDir, "index.html");
+  const jsonPath = join(outputDir, "leaderboard.json");
 
-  const rows = ranked.map((run, index) => `
+  const rows = data.entries.map((entry) => `
     <tr>
-      <td>${index + 1}</td>
-      <td>${escapeHtml(run.score)}</td>
-      <td>${escapeHtml(run.status)}</td>
-      <td>${escapeHtml(run.id)}</td>
-      <td>${escapeHtml(run.createdAt)}</td>
+      <td>${entry.rank}</td>
+      <td>${escapeHtml(formatScore(entry.score))}</td>
+      <td><span class="status status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span></td>
+      <td>${escapeHtml(entry.runId)}</td>
+      <td>${escapeHtml(entry.submissionId ?? "")}</td>
+      <td>${escapeHtml(entry.createdAt)}</td>
     </tr>
   `).join("");
 
+  const historyRows = data.history.slice(-12).map((point) => `
+    <li>
+      <span>${escapeHtml(formatScore(point.bestScore))}</span>
+      <small>${escapeHtml(point.status)} · ${escapeHtml(point.createdAt)}</small>
+    </li>
+  `).join("");
+
+  const publicBest = data.best.public;
+  const anyBest = data.best.any;
+
+  await writeFile(jsonPath, JSON.stringify(data, null, 2), "utf8");
   await writeFile(outputPath, `<!doctype html>
 <html lang="en">
 <head>
@@ -33,20 +51,58 @@ export async function exportReport(spec, runs) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(spec.name)} Leaderboard</title>
   <style>
-    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 40px; color: #1f2923; background: #f7f7f1; }
-    h1 { font-size: 40px; margin-bottom: 8px; }
-    table { border-collapse: collapse; width: 100%; background: white; }
-    th, td { border-bottom: 1px solid #d9d9ce; padding: 12px; text-align: left; }
-    th { color: #65736b; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    :root { color-scheme: light; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; color: #1f2923; background: #f7f7f1; }
+    header { background: #1f7449; color: #fffdf6; padding: 56px max(24px, 7vw); }
+    main { padding: 32px max(24px, 7vw) 64px; }
+    h1 { font-size: 72px; line-height: 1; margin: 0 0 18px; letter-spacing: 0; max-width: 980px; }
+    h2 { font-size: 18px; margin: 0 0 16px; }
+    p { max-width: 760px; line-height: 1.5; }
+    .metrics { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 32px; }
+    .metric { border-top: 1px solid rgba(255,255,255,.35); padding-top: 16px; }
+    .metric strong { display: block; font-size: 30px; line-height: 1.1; }
+    .metric span { color: rgba(255,255,255,.76); }
+    section { margin-top: 34px; }
+    table { border-collapse: collapse; width: 100%; background: #fffdf6; box-shadow: 0 0 0 1px #deded2; }
+    th, td { border-bottom: 1px solid #deded2; padding: 13px 12px; text-align: left; vertical-align: top; }
+    th { color: #65736b; font-size: 12px; text-transform: uppercase; }
+    td { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+    .status { border-radius: 999px; padding: 4px 9px; color: #fff; background: #637064; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+    .status-local { background: #6f7770; }
+    .status-accepted { background: #2d7f95; }
+    .status-verified { background: #226fb3; }
+    .status-promoted, .status-replicated { background: #1f7449; }
+    .history { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+    .history li { background: #fffdf6; border: 1px solid #deded2; padding: 14px; }
+    .history span { display: block; font-weight: 700; }
+    .history small { color: #65736b; }
+    @media (max-width: 720px) { table { display: block; overflow-x: auto; } h1 { font-size: 42px; } }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(spec.name)}</h1>
-  <p>Local leaderboard. Public leaderboards should use verified or promoted runs.</p>
-  <table>
-    <thead><tr><th>#</th><th>Score</th><th>Status</th><th>Run</th><th>Created</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
+  <header>
+    <h1>${escapeHtml(spec.name)}</h1>
+    <p>Benchmark arena leaderboard. Public trust starts at verified/promoted results; local and accepted runs are useful for iteration.</p>
+    <div class="metrics">
+      <div class="metric"><strong>${escapeHtml(formatScore(publicBest?.score))}</strong><span>Best public score</span></div>
+      <div class="metric"><strong>${escapeHtml(formatScore(anyBest?.score))}</strong><span>Best local/any score</span></div>
+      <div class="metric"><strong>${data.counts.promoted}</strong><span>Promoted runs</span></div>
+      <div class="metric"><strong>${data.counts.submissions}</strong><span>Submissions</span></div>
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>Score History</h2>
+      <ul class="history">${historyRows}</ul>
+    </section>
+    <section>
+      <h2>Leaderboard</h2>
+      <table>
+        <thead><tr><th>#</th><th>Score</th><th>Status</th><th>Run</th><th>Submission</th><th>Created</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>
+  </main>
 </body>
 </html>`, "utf8");
 

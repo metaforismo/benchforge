@@ -101,3 +101,24 @@ test("verifySubmission runs public checks from a packaged candidate", async () =
   assert.equal(runs.length, 1);
   assert.equal(submissions[0].acceptedRunId, result.run.id);
 });
+
+test("verifySubmission can mark trusted promoted verifier results", async () => {
+  const spec = await createTempChallenge();
+  const submission = await createSubmission(spec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  });
+
+  const result = await verifySubmission(spec, submission.id, {
+    trusted: true,
+    promote: true,
+    verifierKind: "github-actions"
+  });
+
+  assert.equal(result.submission.status, "promoted");
+  assert.equal(result.run.status, "promoted");
+  assert.equal(result.result.verifier.kind, "github-actions");
+  assert.equal(result.result.verifier.trusted, true);
+  assert.equal(result.result.result.status, "promoted");
+  assert.equal(result.receipt.verifier, "github-actions");
+});

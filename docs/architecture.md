@@ -142,3 +142,31 @@ The local verifier is intentionally conservative about wording. It can mark a ca
 ```
 
 Hosted verifiers can keep the schema and change only `verifier.kind` and `verifier.trusted`.
+
+Trusted CI verifier example:
+
+```bash
+toyfail verify --json --trusted --promote --verifier-kind github-actions --output .benchforge/verifier-result.json
+```
+
+This produces a `promoted` run with `verifier.trusted: true`. Local verifier results should keep `trusted: false`.
+
+## Leaderboard Export
+
+`export-site` writes two files:
+
+```text
+.benchforge/site/index.html
+.benchforge/site/leaderboard.json
+```
+
+`leaderboard.json` uses `benchforge.leaderboard.v1` and contains:
+
+- challenge metadata
+- run counts by status
+- best public score
+- best local/any score
+- ranked entries
+- score history
+
+The HTML is a static view over the same data and can be uploaded as an artifact, served locally, or later deployed to Pages/Cloudflare.

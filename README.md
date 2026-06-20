@@ -24,6 +24,7 @@ npm test
 npm run toyfail:run
 npm run toyfail:submit
 npm run toyfail:verify:json
+npm run toyfail:verify:trusted
 npm run toyfail:submissions
 npm run toyfail:leaderboard
 npm run toyfail:report
@@ -113,3 +114,22 @@ npm run toyfail:leaderboard
 ```
 
 This is still local verification, not public trust. A future trusted runner can reuse the same package shape and mark results as `verified`, `promoted`, or `replicated`.
+
+CI can mark a result as trusted/promoted:
+
+```bash
+npm run toyfail:verify:trusted
+```
+
+This uses:
+
+```bash
+toyfail verify --json --trusted --promote --verifier-kind github-actions --output .benchforge/verifier-result.json
+```
+
+`npm run toyfail:report` writes both:
+
+```text
+challenges/toyfail/.benchforge/site/index.html
+challenges/toyfail/.benchforge/site/leaderboard.json
+```
