@@ -29,6 +29,7 @@ Use this skill to turn a domain or problem into a concrete Benchforge challenge.
    - forbidden paths
    - public tests
    - hidden/verifier-only checks
+   - optional `commands.verify` command for hidden or verifier-only checks
    - primary metric and score direction
    - hardware or compute budget
    - local, accepted, verified, promoted, and replicated tiers
@@ -72,8 +73,8 @@ Forbidden paths:
 Score:
 Public checks:
 Verifier checks:
+Verifier command:
 Cheat risks:
 Promotion rule:
 First implementation step:
 ```
-

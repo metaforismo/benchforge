@@ -11,6 +11,7 @@ Use this skill when working inside a Benchforge challenge.
 
 1. Read `challenge.json`.
 2. Identify `cli`, `editablePaths`, `forbiddenPaths`, `commands`, and score direction.
+   - If `commands.verify` exists, treat it as verifier-only checks. Do not run it as proof of public/local score unless you are acting as the verifier.
 3. Find the branded CLI:
    - Prefer `node ./challenges/<id>/bin/<cli>.js` from repo root.
    - If already inside the challenge directory, use the configured CLI command or `node bin/<cli>.js`.
@@ -29,6 +30,7 @@ Use this skill when working inside a Benchforge challenge.
 - Make one focused change per iteration.
 - Run tests through the CLI, not by manually invoking hidden assumptions.
 - Keep a change only if correctness passes and the score improves enough to matter.
+- Do not edit verifier-only or hidden-check scripts unless the user is designing the challenge, not solving it.
 - Add a note for failed approaches:
 
 ```bash
@@ -86,12 +88,12 @@ Use precise status names:
 - `candidate`: packaged for verification.
 - `accepted`: replayed through local/public checks.
 - `verified`: reproduced by trusted remote verifier.
-- `promoted`: accepted onto the main public leaderboard.
+- `promoted`: reproduced by a trusted verifier and accepted onto the main public frontier.
 - `replicated`: verified by more than one trusted environment.
 
 Never call local or accepted results public proof.
 
-Only publish to hosted leaderboards when `verifier.trusted` is true and the status is `verified`, `promoted`, or `replicated`.
+Only publish to hosted leaderboards when `verifier.trusted` is true and the status is `verified`, `promoted`, or `replicated`. The hosted API may demote a requested `promoted` result to `verified` if it does not improve the public frontier.
 
 ## Creating New Challenges
 

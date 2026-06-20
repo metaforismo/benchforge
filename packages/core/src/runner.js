@@ -30,6 +30,13 @@ export async function runTest(spec) {
   return runChallengeCommand(spec.root, spec.commands.test);
 }
 
+export async function runVerifierChecks(spec) {
+  if (!spec.commands.verify) {
+    return { exitCode: 0, stdout: "", stderr: "" };
+  }
+  return runChallengeCommand(spec.root, spec.commands.verify);
+}
+
 export async function runScore(spec) {
   const scorePath = join(spec.root, "score.json");
   await rm(scorePath, { force: true });

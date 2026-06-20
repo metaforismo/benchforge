@@ -17,6 +17,8 @@ Local scores are useful for iteration, but they are not public proof.
 
 For public leaderboards, Benchforge is designed around candidate submissions that are reproduced by an independent verifier and then marked as verified, promoted, or replicated.
 
+Challenge authors can add an optional `commands.verify` entry in `challenge.json` for verifier-only checks such as hidden seeds, stronger invariants, or private validation scripts. Local `run` and `submit` use public checks; `verify` runs both public checks and verifier-only checks before scoring.
+
 ## Quick Start
 
 ```bash
@@ -145,6 +147,8 @@ It stores only metadata:
 - leaderboard rows
 - public notes
 - lightweight CLI events
+
+When a trusted result asks to be `promoted`, the hosted API only keeps that status if the score improves the current public frontier. Non-improving promoted requests are stored as `verified`.
 
 It does not run heavy benchmarks online. A trusted runner, such as GitHub Actions, runs:
 

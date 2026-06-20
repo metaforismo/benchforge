@@ -53,7 +53,7 @@ replicated
   Reproduced by multiple verifier environments.
 ```
 
-The MVP implements local runs and local receipts. Hosted verification will add accepted, verified, promoted, and replicated states.
+The MVP implements local runs, local receipts, trusted verifier-result ingestion, and hosted public leaderboard states. Direct public solver submission is intentionally a later layer.
 
 ## Factory Flow
 
@@ -109,6 +109,7 @@ toyfail verify <id>
   copy challenge into a temporary clean directory
   apply packaged editable files
   run public tests
+  run optional verifier-only command from commands.verify
   run score command
   store accepted run
   write receipt
@@ -192,6 +193,7 @@ GitHub Actions or trusted runner
 Cloudflare Worker
   require bearer token for writes
   reject untrusted verifier results
+  demote non-frontier promoted requests to verified
   store challenge/submission/run metadata in D1
   expose public leaderboard JSON
 ```

@@ -107,6 +107,29 @@ function validateVerifierResult(body, challengeId) {
   }
 }
 
+function isBetterScore(direction, next, current) {
+  if (current === null || current === undefined) return true;
+  return direction === "maximize" ? next > current : next < current;
+}
+
+function withHostedStatus(result, status) {
+  return {
+    ...result,
+    hosted: {
+      requestedStatus: result.result.status,
+      status
+    },
+    submission: {
+      ...result.submission,
+      status
+    },
+    result: {
+      ...result.result,
+      status
+    }
+  };
+}
+
 async function upsertChallenge(db, result) {
   const challenge = result.challenge;
   await db.prepare(`
@@ -198,16 +221,26 @@ async function insertVerifierResult(db, result) {
 async function ingestVerifierResult(env, challengeId, body) {
   validateVerifierResult(body, challengeId);
   await upsertChallenge(env.DB, body);
-  await upsertSubmission(env.DB, body);
-  await upsertRun(env.DB, body);
-  await insertVerifierResult(env.DB, body);
+  const leaderboard = await buildLeaderboard(env, challengeId);
+  const requestedStatus = body.result.status;
+  const hostedStatus = requestedStatus === "promoted" && !isBetterScore(
+    body.challenge.scoreDirection ?? "minimize",
+    body.result.score,
+    leaderboard?.best.public?.score
+  ) ? "verified" : requestedStatus;
+  const hostedBody = withHostedStatus(body, hostedStatus);
+  await upsertSubmission(env.DB, hostedBody);
+  await upsertRun(env.DB, hostedBody);
+  await insertVerifierResult(env.DB, hostedBody);
   return {
     accepted: true,
     challengeId,
-    submissionId: body.submission.id,
-    runId: body.result.runId,
-    status: body.result.status,
-    score: body.result.score
+    submissionId: hostedBody.submission.id,
+    runId: hostedBody.result.runId,
+    requestedStatus,
+    status: hostedStatus,
+    promoted: hostedStatus === "promoted",
+    score: hostedBody.result.score
   };
 }
 

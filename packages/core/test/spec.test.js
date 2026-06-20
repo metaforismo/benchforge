@@ -13,10 +13,16 @@ test("validateChallengeSpec accepts a complete spec", () => {
     version: "0.1.0",
     score: { direction: "minimize", primaryMetric: "time_ms" },
     editablePaths: ["starter/solution.js"],
-    commands: { test: "node harness/test.js", score: "node harness/score.js" }
+    commands: {
+      test: "node harness/test.js",
+      verify: "node harness/hidden.js",
+      score: "node harness/score.js"
+    }
   };
 
-  assert.equal(validateChallengeSpec(spec).id, "toyfail");
+  const validated = validateChallengeSpec(spec);
+  assert.equal(validated.id, "toyfail");
+  assert.equal(validated.commands.verify, "node harness/hidden.js");
 });
 
 test("validateChallengeSpec rejects missing command fields", () => {

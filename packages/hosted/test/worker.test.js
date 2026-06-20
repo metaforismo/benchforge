@@ -181,12 +181,52 @@ test("trusted verifier result ingestion builds leaderboard", async () => {
     body: JSON.stringify(verifierResult())
   }, testEnv);
   assert.equal(ingest.status, 201);
+  const ingestBody = await ingest.json();
+  assert.equal(ingestBody.status, "promoted");
+  assert.equal(ingestBody.promoted, true);
 
   const leaderboardResponse = await request("/api/challenges/toyfail/leaderboard", {}, testEnv);
   const leaderboard = await leaderboardResponse.json();
   assert.equal(leaderboard.schemaVersion, "benchforge.leaderboard.v1");
   assert.equal(leaderboard.best.public.runId, "run_1");
   assert.equal(leaderboard.entries[0].files[0], "starter/solution.js");
+});
+
+test("hosted promotion demotes non-frontier promoted requests", async () => {
+  const testEnv = env();
+  const headers = {
+    authorization: "Bearer secret",
+    "content-type": "application/json"
+  };
+
+  await request("/api/challenges/toyfail/verifier-results", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(verifierResult({
+      submission: { ...verifierResult().submission, id: "sub_fast" },
+      result: { ...verifierResult().result, runId: "run_fast", score: 3 }
+    }))
+  }, testEnv);
+
+  const slower = await request("/api/challenges/toyfail/verifier-results", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(verifierResult({
+      submission: { ...verifierResult().submission, id: "sub_slow" },
+      result: { ...verifierResult().result, runId: "run_slow", score: 9 }
+    }))
+  }, testEnv);
+  const slowerBody = await slower.json();
+  assert.equal(slowerBody.requestedStatus, "promoted");
+  assert.equal(slowerBody.status, "verified");
+  assert.equal(slowerBody.promoted, false);
+
+  const leaderboardResponse = await request("/api/challenges/toyfail/leaderboard", {}, testEnv);
+  const leaderboard = await leaderboardResponse.json();
+  assert.equal(leaderboard.counts.promoted, 1);
+  assert.equal(leaderboard.counts.verified, 1);
+  assert.equal(leaderboard.entries[0].runId, "run_fast");
+  assert.equal(leaderboard.entries[1].status, "verified");
 });
 
 test("notes can be added and searched", async () => {

@@ -73,6 +73,8 @@ Keep `BENCHFORGE_API_TOKEN` only in owner-controlled runners. Do not give it to 
 
 The default CI workflow already contains an optional manual publish step. It only runs on `workflow_dispatch` and only when both secrets exist.
 
+The hosted API enforces the frontier rule: if a trusted verifier result asks for `promoted` but does not improve the current public best score, the run is stored as `verified` instead.
+
 Manual command:
 
 ```bash
@@ -93,5 +95,4 @@ node ./challenges/toyfail/bin/toyfail.js hosted leaderboard \
 - Add GitHub OAuth and per-user API keys for public solver submissions.
 - Store submission archives in R2 if you want ECDSA.fail-style direct CLI submission.
 - Add a queue-backed verifier dispatcher if you do not want to rely on GitHub Actions.
-- Add promotion rules so only better verified results become `promoted`.
 - Add GitHub commit promotion for winning editable paths.

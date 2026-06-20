@@ -37,6 +37,9 @@ export function validateChallengeSpec(spec, root = process.cwd()) {
   }
   requireString(spec.commands.test, "commands.test");
   requireString(spec.commands.score, "commands.score");
+  if (spec.commands.verify !== undefined) {
+    requireString(spec.commands.verify, "commands.verify");
+  }
 
   return {
     ...spec,

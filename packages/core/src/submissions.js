@@ -2,7 +2,7 @@ import { cp, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
 import { randomUUID } from "node:crypto";
-import { runScore, runTest } from "./runner.js";
+import { runScore, runTest, runVerifierChecks } from "./runner.js";
 import { appendRun, appendSubmission, getStoreDir, listSubmissions, updateSubmission } from "./store.js";
 import { createReceipt } from "./receipts.js";
 
@@ -163,6 +163,16 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
       verifierLog: testResult.stderr || testResult.stdout
     });
     throw new Error(`verification tests failed\n${testResult.stderr || testResult.stdout}`);
+  }
+
+  const verifierResult = await runVerifierChecks(tempSpec);
+  if (verifierResult.exitCode !== 0) {
+    await updateSubmission(spec.root, submission.id, {
+      status: "rejected",
+      rejectedAt: nowIso(),
+      verifierLog: verifierResult.stderr || verifierResult.stdout
+    });
+    throw new Error(`verifier checks failed\n${verifierResult.stderr || verifierResult.stdout}`);
   }
 
   const scoreResult = await runScore(tempSpec);

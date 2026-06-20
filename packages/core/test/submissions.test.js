@@ -102,6 +102,33 @@ test("verifySubmission runs public checks from a packaged candidate", async () =
   assert.equal(submissions[0].acceptedRunId, result.run.id);
 });
 
+test("verifySubmission runs optional verifier-only checks", async () => {
+  const spec = await createTempChallenge();
+  await writeFile(join(spec.root, "harness", "verify.js"), `
+    console.error("hidden invariant failed");
+    process.exit(23);
+  `);
+  const submission = await createSubmission(spec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  });
+
+  await assert.rejects(
+    () => verifySubmission({
+      ...spec,
+      commands: {
+        ...spec.commands,
+        verify: "node harness/verify.js"
+      }
+    }, submission.id),
+    /verifier checks failed/
+  );
+
+  const submissions = await listSubmissions(spec.root);
+  assert.equal(submissions[0].status, "rejected");
+  assert.match(submissions[0].verifierLog, /hidden invariant failed/);
+});
+
 test("verifySubmission can mark trusted promoted verifier results", async () => {
   const spec = await createTempChallenge();
   const submission = await createSubmission(spec, {
