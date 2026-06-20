@@ -267,3 +267,9 @@ trusted verifier
 This mirrors the useful part of the ECDSA.fail pattern without making GitHub the
 only source of truth. The portable bundle remains the neutral artifact; GitHub
 and D1 are two indexes over the same verifier result.
+
+The included `.github/workflows/verify-bundle.yml` implements the trusted
+GitHub Actions path as a manual workflow. It takes `challenge_path` and
+`bundle_path`, verifies the bundle with `--trusted --verifier-kind
+github-actions`, uploads verifier artifacts, and can optionally publish to the
+hosted API when secrets are configured.

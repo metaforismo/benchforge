@@ -1,0 +1,133 @@
+name: Verify Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      challenge_path:
+        description: "Challenge directory, relative to repository root"
+        required: true
+        default: "challenges/toyfail"
+      submission_ref:
+        description: "Git ref containing the submitted bundle; defaults to the dispatch ref"
+        required: false
+        default: ""
+      bundle_path:
+        description: "Bundle path relative to submission_ref root"
+        required: true
+        default: "submission.bundle.json"
+      promote:
+        description: "Mark trusted result as promoted"
+        required: true
+        type: boolean
+        default: true
+      publish_hosted:
+        description: "Publish verifier result to hosted API when secrets are configured"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout trusted verifier code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted
+
+      - name: Checkout submitted bundle
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.submission_ref || github.ref_name }}
+          path: submitted
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Doctor
+        working-directory: trusted
+        env:
+          BENCHFORGE_CHALLENGE_ROOT: ${{ github.workspace }}/trusted/${{ inputs.challenge_path }}
+        run: node ./packages/core/src/cli.js doctor --run
+
+      - name: Verify submitted bundle
+        working-directory: trusted
+        env:
+          BENCHFORGE_CHALLENGE_ROOT: ${{ github.workspace }}/trusted/${{ inputs.challenge_path }}
+          BUNDLE_PATH: ${{ github.workspace }}/submitted/${{ inputs.bundle_path }}
+          PROMOTE: ${{ inputs.promote }}
+        run: |
+          args=(
+            verify
+            --bundle "$BUNDLE_PATH"
+            --json
+            --trusted
+            --verifier-kind github-actions
+            --output .benchforge/verifier-result.json
+          )
+          if [ "$PROMOTE" = "true" ]; then
+            args+=(--promote)
+          fi
+          node ./packages/core/src/cli.js "${args[@]}"
+
+      - name: Export audit artifact
+        working-directory: trusted
+        env:
+          BENCHFORGE_CHALLENGE_ROOT: ${{ github.workspace }}/trusted/${{ inputs.challenge_path }}
+        run: node ./packages/core/src/cli.js submissions audit latest --output .benchforge/audit-latest
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchforge-verifier-result
+          path: trusted/${{ inputs.challenge_path }}/.benchforge/verifier-result.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchforge-submission-audit
+          path: trusted/${{ inputs.challenge_path }}/.benchforge/audit-latest
+          if-no-files-found: error
+
+  publish:
+    if: ${{ inputs.publish_hosted }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout trusted publisher code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: benchforge-verifier-result
+          path: verifier-artifact
+
+      - name: Publish hosted verifier result
+        env:
+          BENCHFORGE_CHALLENGE_ROOT: ${{ github.workspace }}/${{ inputs.challenge_path }}
+          BENCHFORGE_API_URL: ${{ secrets.BENCHFORGE_API_URL }}
+          BENCHFORGE_API_TOKEN: ${{ secrets.BENCHFORGE_API_TOKEN }}
+        run: |
+          if [ -z "$BENCHFORGE_API_URL" ] || [ -z "$BENCHFORGE_API_TOKEN" ]; then
+            echo "BENCHFORGE_API_URL or BENCHFORGE_API_TOKEN is not configured."
+            exit 1
+          fi
+          result_file="$(find "$PWD/verifier-artifact" -type f -name verifier-result.json | head -n 1)"
+          if [ -z "$result_file" ]; then
+            echo "Could not find verifier-result.json in downloaded artifact."
+            exit 1
+          fi
+          node ./packages/core/src/cli.js publish-verification --file "$result_file"

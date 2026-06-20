@@ -228,4 +228,6 @@ node ./challenges/toyfail/bin/toyfail.js hosted leaderboard \
 
 Cloudflare setup is documented in `docs/hosted-cloudflare.md`.
 
+GitHub Actions verifier setup is documented in `docs/github-actions-verifier.md`.
+
 Design notes from the public ECDSA.fail challenge repo are in `docs/ecdsafail-patterns.md`.

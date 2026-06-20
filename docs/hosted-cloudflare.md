@@ -73,6 +73,10 @@ Keep `BENCHFORGE_API_TOKEN` only in owner-controlled runners. Do not give it to 
 
 The default CI workflow already contains an optional manual publish step. It only runs on `workflow_dispatch` and only when both secrets exist.
 
+For bundle-based verification, use `.github/workflows/verify-bundle.yml`. It
+replays a submitted bundle in GitHub Actions, uploads verifier artifacts, and
+can publish the trusted result to this hosted API when `publish_hosted=true`.
+
 The hosted API enforces the frontier rule: if a trusted verifier result asks for `promoted` but does not improve the current public best score, the run is stored as `verified` instead.
 
 Manual command:
