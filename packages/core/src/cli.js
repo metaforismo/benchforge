@@ -7,6 +7,7 @@ import { appendNote, appendRun, listNotes, listRuns } from "./store.js";
 import { rankRuns } from "./leaderboard.js";
 import { createReceipt, verifyReceipt } from "./receipts.js";
 import { exportReport } from "./report.js";
+import { runDoctor } from "./doctor.js";
 import {
   createSubmission,
   exportSubmissionBundle,
@@ -31,8 +32,10 @@ Commands:
   run                       Run tests, score, store local run
   test                      Run public tests only
   score                     Run score command only
+  doctor                    Preflight challenge configuration
+                           optional: --run --json
   submit                    Package current editable files as a candidate
-                           optional: --bundle-output <path>
+                           optional: --bundle-output <path> --verify --output <path>
   verify [id] [--json]      Verify candidate with public checks
                            optional: --bundle <path>
                            optional: --output <path>
@@ -166,6 +169,7 @@ function parseVerifyArgs(args) {
 function parseOptions(args) {
   const positional = [];
   const options = {};
+  const booleanOptions = new Set(["json", "promote", "run", "trusted", "verify"]);
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -175,8 +179,8 @@ function parseOptions(args) {
     }
 
     const key = arg.slice(2);
-    if (key === "json") {
-      options.json = true;
+    if (booleanOptions.has(key)) {
+      options[key] = true;
       continue;
     }
 
@@ -207,6 +211,13 @@ async function writeJsonOutput(spec, outputPath, value) {
 
 function resolveChallengePath(spec, path) {
   return path.startsWith("/") ? path : resolve(spec.root, path);
+}
+
+function printDoctorReport(report) {
+  console.log(`${report.challenge.cli}: doctor ${report.status}`);
+  for (const item of report.checks) {
+    console.log(`${item.status.padEnd(4)} ${item.name}: ${item.message}`);
+  }
 }
 
 async function main(argv = process.argv) {
@@ -250,6 +261,20 @@ async function main(argv = process.argv) {
     return;
   }
 
+  if (command === "doctor") {
+    const { options } = parseOptions([subcommand, ...rest].filter(Boolean));
+    const report = await runDoctor(spec, { run: options.run === true });
+    if (options.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printDoctorReport(report);
+    }
+    if (report.status === "fail") {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   if (command === "run") {
     const testResult = await runTest(spec);
     process.stdout.write(testResult.stdout);
@@ -283,6 +308,10 @@ async function main(argv = process.argv) {
 
   if (command === "submit") {
     const { options } = parseOptions([subcommand, ...rest].filter(Boolean));
+    if (options.promote && !options.trusted) {
+      throw new Error("--promote requires --trusted");
+    }
+
     const testResult = await runTest(spec);
     process.stdout.write(testResult.stdout);
     process.stderr.write(testResult.stderr);
@@ -302,6 +331,21 @@ async function main(argv = process.argv) {
     console.log(`${cliName}: score ${submission.score}`);
     console.log(`${cliName}: package ${submission.path}`);
     console.log(`${cliName}: bundle ${bundleOutput}`);
+
+    if (options.verify) {
+      const verified = await verifySubmission(spec, submission.id, {
+        trusted: options.trusted === true,
+        promote: options.promote === true,
+        verifierKind: options["verifier-kind"]
+      });
+      const outputPath = await writeJsonOutput(
+        spec,
+        options.output ?? ".benchforge/verifier-result.json",
+        verified.result
+      );
+      console.log(`${cliName}: verified ${verified.run.status} run ${verified.run.id}`);
+      console.log(`${cliName}: verifier result ${outputPath}`);
+    }
     return;
   }
 

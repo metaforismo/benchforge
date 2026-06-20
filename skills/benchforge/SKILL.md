@@ -18,6 +18,7 @@ Use this skill when working inside a Benchforge challenge.
 4. Run baseline:
 
 ```bash
+<cli> doctor --run
 <cli> run
 <cli> leaderboard
 <cli> notes search "<current idea>"
@@ -42,9 +43,9 @@ Use this skill when working inside a Benchforge challenge.
 Use the full loop before reporting a result:
 
 ```bash
+<cli> doctor --run
 <cli> run
-<cli> submit
-<cli> verify --json --output .benchforge/verifier-result.json
+<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 <cli> submissions list
 <cli> leaderboard
 ```
@@ -52,7 +53,7 @@ Use the full loop before reporting a result:
 For a portable handoff to CI or another verifier:
 
 ```bash
-<cli> submit --bundle-output .benchforge/latest.bundle.json
+<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 <cli> verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 <cli> submissions export latest --output .benchforge/latest.bundle.json
 <cli> submissions import .benchforge/latest.bundle.json
@@ -90,6 +91,12 @@ Report:
 - whether the result is only local/accepted or truly remote verified
 - whether `verifier.trusted` is true in the verifier result JSON
 - whether the result was published to the hosted API
+
+## Agent Safety
+
+- Run `doctor --run` before any forceful update, sync, or cleanup workflow.
+- Never run a forceful sync/update command unless the challenge root and git remote match the intended challenge.
+- If `challenge.json` declares `source.repository`, treat a `git-context` doctor failure as a hard stop.
 
 ## Trust Language
 

@@ -22,8 +22,10 @@ Do not edit:
 Commands:
 
 ```bash
+npm run toyfail:doctor
 npm run toyfail:run
 npm run toyfail:submit
+npm run toyfail:submit:verify
 npm run toyfail:verify:json
 npm run toyfail:verify:trusted
 npm run toyfail:submissions
@@ -34,7 +36,7 @@ npm run toyfail:report
 Portable bundle flow:
 
 ```bash
-node ./challenges/toyfail/bin/toyfail.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/toyfail/bin/toyfail.js submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 node ./challenges/toyfail/bin/toyfail.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/toyfail/bin/toyfail.js submissions export latest --output .benchforge/latest.bundle.json
 node ./challenges/toyfail/bin/toyfail.js submissions import .benchforge/latest.bundle.json
@@ -57,3 +59,5 @@ node ./challenges/toyfail/bin/toyfail.js notes add "Describe the failed approach
 Only trust a score after tests pass and the CLI records a run.
 
 Use `submit` to package a candidate and `verify` to replay that package through public checks. Prefer `npm run toyfail:verify:json` when another tool needs a local machine-readable verifier result. Use `npm run toyfail:verify:trusted` only in owner-controlled CI or a trusted verifier. Treat `accepted` as local-public-check status, not as public leaderboard proof. Publish hosted results only after a trusted verifier result exists.
+
+Run `npm run toyfail:doctor` before forceful update or sync workflows. If a future challenge declares an expected `source.repository`, a `git-context` failure means the agent is in the wrong repository.

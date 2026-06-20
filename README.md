@@ -23,8 +23,10 @@ Challenge authors can add an optional `commands.verify` entry in `challenge.json
 
 ```bash
 npm test
+npm run toyfail:doctor
 npm run toyfail:run
 npm run toyfail:submit
+npm run toyfail:submit:verify
 npm run toyfail:verify:json
 npm run toyfail:verify:trusted
 npm run toyfail:submissions
@@ -43,8 +45,9 @@ challenges/toyfail/.benchforge/site/index.html
 
 ```bash
 node ./packages/core/src/cli.js create grpoarena --name "GRPO Arena"
+node ./challenges/grpoarena/bin/grpoarena.js doctor --run
 node ./challenges/grpoarena/bin/grpoarena.js run
-node ./challenges/grpoarena/bin/grpoarena.js submit
+node ./challenges/grpoarena/bin/grpoarena.js submit --verify --bundle-output .benchforge/latest.bundle.json
 node ./challenges/grpoarena/bin/grpoarena.js verify --json --output .benchforge/verifier-result.json
 ```
 
@@ -84,6 +87,7 @@ This repository starts with a local-first MVP:
 - shared core engine
 - `toyfail` demo challenge
 - challenge generator with branded CLI wrappers
+- `doctor --run` preflight for challenge, verifier, bundle, and git-context checks
 - local notes
 - local candidate submissions
 - local public-check verification
@@ -96,13 +100,23 @@ The repository now includes an optional Cloudflare Worker + D1 hosted layer for 
 ## Local Submission Loop
 
 ```bash
+npm run toyfail:doctor
 npm run toyfail:run
-npm run toyfail:submit
+npm run toyfail:submit:verify
 npm run toyfail:verify:json
 npm run toyfail:leaderboard
 ```
 
 `submit` packages only the editable files declared by `challenge.json`.
+
+For an ECDSA.fail-style local loop, use one command:
+
+```bash
+node ./challenges/toyfail/bin/toyfail.js submit \
+  --verify \
+  --bundle-output .benchforge/latest.bundle.json \
+  --output .benchforge/verifier-result.json
+```
 
 Each submission also writes a portable `benchforge.submission.v1` bundle containing only allowed editable files, file hashes, and candidate metadata. You can export or verify a bundle directly:
 
@@ -181,3 +195,5 @@ node ./challenges/toyfail/bin/toyfail.js hosted leaderboard \
 ```
 
 Cloudflare setup is documented in `docs/hosted-cloudflare.md`.
+
+Design notes from the public ECDSA.fail challenge repo are in `docs/ecdsafail-patterns.md`.

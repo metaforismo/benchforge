@@ -10,6 +10,7 @@ Branded CLI
 
 Benchforge Core
   spec loading
+  doctor preflight
   command execution
   local store
   notes
@@ -72,6 +73,12 @@ node ./challenges/grpoarena/bin/grpoarena.js run
 ```
 
 The generated CLI wrapper is thin, but the generated challenge pack changes the actual benchmark behavior through its spec, editable paths, and harness.
+
+`doctor --run` is the preflight command for both humans and agents. It reports
+the challenge root, editable files, forbidden path coverage, optional verifier
+checks, hosted API config, bundle support, and git context. If a challenge
+declares an expected `source.repository`, a mismatched or missing git context is
+a failure. This is the guardrail for future forceful sync/update workflows.
 
 ## Skill Layer
 
@@ -229,3 +236,24 @@ Cloudflare Worker
 This keeps benchmark execution away from the hosted API. D1 stores official metadata, not self-reported local scores.
 
 Direct ECDSA.fail-style CLI submissions can be added later with the same trust boundary: upload editable paths, verify elsewhere, then publish only reproduced results.
+
+## GitHub Audit Trail
+
+Cloudflare/D1 is the fast public index for leaderboards, notes, and telemetry.
+GitHub can also be used as an audit trail:
+
+```text
+solver
+  produce benchforge.submission.v1 bundle
+  optionally push bundle/files to submissions/<uuid>
+
+trusted verifier
+  checks out the submission branch or imports the bundle
+  runs verify --trusted
+  publishes verifier-result JSON to Cloudflare
+  optionally commits "Accept submission <uuid>" to main
+```
+
+This mirrors the useful part of the ECDSA.fail pattern without making GitHub the
+only source of truth. The portable bundle remains the neutral artifact; GitHub
+and D1 are two indexes over the same verifier result.

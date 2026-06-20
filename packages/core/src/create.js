@@ -202,8 +202,9 @@ Allowed edits:
 Run:
 
 \`\`\`bash
+node ./challenges/${id}/bin/${cli}.js doctor --run
 node ./challenges/${id}/bin/${cli}.js run
-node ./challenges/${id}/bin/${cli}.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/${id}/bin/${cli}.js submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
 node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
@@ -237,14 +238,17 @@ Do not edit:
 Commands:
 
 \`\`\`bash
+node ./challenges/${id}/bin/${cli}.js doctor --run
 node ./challenges/${id}/bin/${cli}.js run
-node ./challenges/${id}/bin/${cli}.js submit --bundle-output .benchforge/latest.bundle.json
+node ./challenges/${id}/bin/${cli}.js submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js verify --bundle .benchforge/latest.bundle.json --json --output .benchforge/verifier-result.json
 node ./challenges/${id}/bin/${cli}.js leaderboard
 node ./challenges/${id}/bin/${cli}.js publish-verification --api "$BENCHFORGE_API_URL" --token "$BENCHFORGE_API_TOKEN"
 \`\`\`
 
 Only trust a score after tests pass and the CLI records a run.
+
+Before any forceful update or sync workflow, confirm \`doctor\` reports the expected challenge root and git context.
 `);
 
   return {
