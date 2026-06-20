@@ -1,0 +1,17 @@
+{
+  "id": "toyfail",
+  "name": "Toyfail",
+  "cli": "toyfail",
+  "version": "0.1.0",
+  "score": {
+    "direction": "minimize",
+    "primaryMetric": "time_ms",
+    "secondaryMetrics": ["correctness_cases", "checksum"]
+  },
+  "editablePaths": ["starter/solution.js"],
+  "forbiddenPaths": ["harness/**", "challenge.json"],
+  "commands": {
+    "test": "node harness/test.js",
+    "score": "node harness/score.js"
+  }
+}

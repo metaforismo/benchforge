@@ -1,0 +1,21 @@
+{
+  "name": "benchforge",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local-first benchmark challenge factory with branded CLIs, notes, verifier receipts, and leaderboard exports.",
+  "bin": {
+    "benchforge": "./packages/core/src/cli.js",
+    "toyfail": "./challenges/toyfail/bin/toyfail.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "toyfail": "node ./challenges/toyfail/bin/toyfail.js",
+    "toyfail:run": "node ./challenges/toyfail/bin/toyfail.js run",
+    "toyfail:score": "node ./challenges/toyfail/bin/toyfail.js score",
+    "toyfail:leaderboard": "node ./challenges/toyfail/bin/toyfail.js leaderboard",
+    "toyfail:report": "node ./challenges/toyfail/bin/toyfail.js export-site"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

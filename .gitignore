@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+work/
+.benchforge/
+score.json
+challenges/*/.benchforge/
+challenges/*/score.json
