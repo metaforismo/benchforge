@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { runDoctor } from "../src/doctor.js";
+
+const execFileAsync = promisify(execFile);
 
 async function createTempChallenge() {
   const root = await mkdtemp(join(tmpdir(), "benchforge-doctor-"));
@@ -111,4 +115,23 @@ test("runDoctor fails when an expected repository is configured outside git", as
   assert.equal(report.status, "fail");
   assert.equal(byName(report, "git-context").status, "fail");
   assert.match(byName(report, "git-context").message, /not inside a git repo/);
+});
+
+test("runDoctor requireClean fails on dirty git worktrees", async () => {
+  const spec = await createTempChallenge();
+  await execFileAsync("git", ["init"], { cwd: spec.root });
+  await execFileAsync("git", ["config", "user.email", "benchforge@example.com"], { cwd: spec.root });
+  await execFileAsync("git", ["config", "user.name", "Benchforge"], { cwd: spec.root });
+  await execFileAsync("git", ["add", "."], { cwd: spec.root });
+  await execFileAsync("git", ["commit", "-m", "initial"], { cwd: spec.root });
+
+  const clean = await runDoctor(spec, { requireClean: true });
+  assert.equal(byName(clean, "git-clean").status, "pass");
+
+  await writeFile(join(spec.root, "starter", "solution.js"), "exports.solve = () => [];\n");
+  const dirty = await runDoctor(spec, { requireClean: true });
+
+  assert.equal(dirty.status, "fail");
+  assert.equal(byName(dirty, "git-clean").status, "fail");
+  assert.match(byName(dirty, "git-clean").details.dirty[0], /starter\/solution.js/);
 });

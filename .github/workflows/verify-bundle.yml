@@ -53,7 +53,7 @@ jobs:
         working-directory: trusted
         env:
           BENCHFORGE_CHALLENGE_ROOT: ${{ github.workspace }}/trusted/${{ inputs.challenge_path }}
-        run: node ./packages/core/src/cli.js doctor --run
+        run: node ./packages/core/src/cli.js doctor --run --require-clean --expect-remote "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
       - name: Verify submitted bundle
         working-directory: trusted
@@ -70,6 +70,8 @@ jobs:
             --verifier-kind github-actions
             --output .benchforge/verifier-result.json
           )
+          submitted_sha="$(git -C "$GITHUB_WORKSPACE/submitted" rev-parse HEAD)"
+          args+=(--commit-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$submitted_sha")
           if [ "$PROMOTE" = "true" ]; then
             args+=(--promote)
           fi

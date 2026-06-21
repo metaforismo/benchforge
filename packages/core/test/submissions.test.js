@@ -73,6 +73,10 @@ test("createSubmission packages editable files and records candidate", async () 
   const submission = await createSubmission(spec, {
     score: 7,
     metrics: { time_ms: 7 }
+  }, {
+    solver: "Ada",
+    model: "GPT-Test",
+    note: "first attempt"
   });
 
   const manifest = JSON.parse(await readFile(join(submission.path, "submission.json"), "utf8"));
@@ -83,6 +87,7 @@ test("createSubmission packages editable files and records candidate", async () 
   assert.equal(manifest.status, "candidate");
   assert.equal(bundle.schemaVersion, "benchforge.submission.v1");
   assert.equal(bundle.bundleHash, submission.bundleHash);
+  assert.equal(bundle.submission.metadata.model, "GPT-Test");
   assert.equal(bundle.files[0].path, "starter/solution.js");
   assert.match(copiedSolution, /exports.solve/);
   assert.equal(submissions.length, 1);
@@ -163,9 +168,33 @@ test("verifySubmission runs public checks from a packaged candidate", async () =
   assert.equal(result.result.schemaVersion, "benchforge.verification.v1");
   assert.equal(result.result.result.status, "accepted");
   assert.equal(result.result.result.receiptHash, result.receipt.receiptHash);
+  assert.equal(result.result.submission.metadata.commitUrl, undefined);
   assert.equal(verifyReceipt(result.result.receipt), true);
   assert.equal(runs.length, 1);
   assert.equal(submissions[0].acceptedRunId, result.run.id);
+});
+
+test("verifySubmission can add verifier metadata", async () => {
+  const spec = await createTempChallenge();
+  const submission = await createSubmission(spec, {
+    score: 7,
+    metrics: { time_ms: 7 }
+  }, {
+    solver: "Ada"
+  });
+
+  const result = await verifySubmission(spec, submission.id, {
+    metadata: {
+      model: "Claude Test",
+      commitUrl: "https://github.com/example/repo/commit/abc"
+    }
+  });
+
+  const submissions = await listSubmissions(spec.root);
+  assert.equal(result.result.submission.metadata.solver, "Ada");
+  assert.equal(result.result.submission.metadata.model, "Claude Test");
+  assert.equal(result.result.submission.metadata.commitUrl, "https://github.com/example/repo/commit/abc");
+  assert.equal(submissions[0].metadata.commitUrl, "https://github.com/example/repo/commit/abc");
 });
 
 test("verifySubmission runs optional verifier-only checks", async () => {

@@ -63,7 +63,7 @@ For local iteration:
 <cli> setup
 <cli> doctor --run
 <cli> run
-<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
+<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json --model "<model>" --note "<approach>"
 <cli> leaderboard
 ```
 
@@ -105,11 +105,20 @@ Benchforge should support both:
 - GitHub branches or commits as an optional audit trail,
 - Cloudflare/D1 as an optional leaderboard and notes index.
 
+The best default is hybrid:
+
+- local CLI produces a bundle and optional metadata,
+- trusted CI verifies the bundle and can attach a GitHub commit URL,
+- hosted storage indexes verified results, notes, and leaderboard views,
+- static reports work even when hosted storage is not deployed.
+
 ## Anti-Cheat Lessons To Carry Forward
 
 - Always delete stale score outputs before running score commands.
 - Refuse forceful sync/update commands unless the challenge root and expected
   git remote match.
+- Require a clean worktree before overwrite/sync operations unless the user
+  explicitly exports a bundle or audit directory first.
 - Treat local scores as iteration only.
 - Package only declared editable paths.
 - Hash every submitted file and the whole bundle.
@@ -128,3 +137,8 @@ challenge repo. It is also more complex. The intended correction is not to
 remove bundles, receipts, hosted APIs, or verifier status. The correction is to
 make the default command path short and obvious, while preserving those layers
 for public deployments.
+
+Benchforge should not copy ECDSA.fail's exact GitHub-first operational model.
+It should keep GitHub as one strong provenance option and keep the bundle as the
+portable source artifact. That makes the same engine work for a private local
+math challenge, a public ML arena, or a CI-backed algorithm leaderboard.

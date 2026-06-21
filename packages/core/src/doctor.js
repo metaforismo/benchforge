@@ -60,6 +60,14 @@ async function gitContext(root) {
   }
 }
 
+async function gitStatus(root) {
+  const result = await execFileAsync("git", ["-C", root, "status", "--porcelain"]);
+  return result.stdout
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean);
+}
+
 export async function runDoctor(spec, options = {}) {
   const checks = [];
 
@@ -103,7 +111,7 @@ export async function runDoctor(spec, options = {}) {
 
   checks.push(check("challenge-root", "pass", "challenge root resolved", { root: spec.root }));
 
-  const expectedRemote = expectedRepository(spec);
+  const expectedRemote = options.expectRemote ?? expectedRepository(spec);
   const git = await gitContext(spec.root);
   if (!git && expectedRemote) {
     checks.push(check("git-context", "fail", "expected repository is configured but challenge root is not inside a git repo", {
@@ -123,6 +131,17 @@ export async function runDoctor(spec, options = {}) {
       remote: git.remote || null,
       expectedRemote
     }));
+  }
+
+  if (options.requireClean === true) {
+    if (!git) {
+      checks.push(check("git-clean", "fail", "clean git worktree required but challenge root is not inside a git repo"));
+    } else {
+      const dirty = await gitStatus(spec.root);
+      checks.push(dirty.length === 0
+        ? check("git-clean", "pass", "git worktree is clean")
+        : check("git-clean", "fail", "git worktree has uncommitted changes", { dirty }));
+    }
   }
 
   if (options.run === true) {

@@ -119,6 +119,7 @@ async function createSubmissionBundle(spec, manifest) {
       status: "candidate",
       candidateScore: manifest.score,
       candidateMetrics: manifest.metrics,
+      metadata: manifest.metadata ?? {},
       editablePaths: manifest.editablePaths,
       files: manifest.files
     },
@@ -131,7 +132,7 @@ async function createSubmissionBundle(spec, manifest) {
   };
 }
 
-export async function createSubmission(spec, scoreResult) {
+export async function createSubmission(spec, scoreResult, metadata = {}) {
   const submissionId = `sub_${randomUUID()}`;
   const submissionDir = join(getStoreDir(spec.root), "submissions", submissionId);
   const files = await listEditableFiles(spec.root, spec.editablePaths);
@@ -152,6 +153,7 @@ export async function createSubmission(spec, scoreResult) {
     status: "candidate",
     score: scoreResult.score,
     metrics: scoreResult.metrics,
+    metadata,
     editablePaths: spec.editablePaths,
     files
   };
@@ -341,6 +343,7 @@ export async function importSubmissionBundle(spec, bundlePath) {
     status: "candidate",
     score: bundle.submission.candidateScore ?? null,
     metrics: bundle.submission.candidateMetrics ?? {},
+    metadata: bundle.submission.metadata ?? {},
     editablePaths: bundle.submission.editablePaths ?? spec.editablePaths,
     files: bundle.submission.files
   };
@@ -392,6 +395,11 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
   if (!submission) {
     throw new Error("no submission found");
   }
+
+  const metadata = {
+    ...(submission.metadata ?? {}),
+    ...(options.metadata ?? {})
+  };
 
   const manifest = JSON.parse(await readFile(join(submission.path, "submission.json"), "utf8"));
   for (const file of manifest.files) {
@@ -448,7 +456,8 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
     [`${status}At`]: nowIso(),
     acceptedRunId: run.id,
     acceptedScore: run.score,
-    acceptedMetrics: run.metrics
+    acceptedMetrics: run.metrics,
+    metadata
   });
 
   const result = {
@@ -466,6 +475,7 @@ export async function verifySubmission(spec, requestedId = "latest", options = {
       status: accepted.status,
       candidateScore: submission.score,
       candidateMetrics: submission.metrics,
+      metadata,
       files: manifest.files
     },
     verifier: {

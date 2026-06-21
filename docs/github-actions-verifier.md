@@ -80,9 +80,10 @@ The workflow:
 3. runs `doctor --run`,
 4. verifies the bundle with `--trusted --verifier-kind github-actions`,
 5. applies `--promote` when requested,
-6. uploads `benchforge-verifier-result`,
-7. uploads `benchforge-submission-audit`,
-8. optionally publishes to the hosted Cloudflare API in a separate fresh job.
+6. records the submitted commit URL in verifier metadata,
+7. uploads `benchforge-verifier-result`,
+8. uploads `benchforge-submission-audit`,
+9. optionally publishes to the hosted Cloudflare API in a separate fresh job.
 
 The split checkout is intentional: untrusted submission branches provide the
 bundle, but the verifier code and publish code come from the default branch.
@@ -115,3 +116,7 @@ publish trusted verifier results.
 This matches the useful part of the ECDSA.fail pattern: public artifacts and
 auditable verifier runs, while keeping heavy benchmark execution out of the
 website/API.
+
+The static report and hosted leaderboard can display the commit link, solver,
+model, and note when those fields are present. They are metadata for review and
+provenance; the trusted score still comes only from the replayed verifier run.

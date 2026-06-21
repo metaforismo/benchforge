@@ -52,7 +52,7 @@ Use the full loop before reporting a result:
 ```bash
 <cli> doctor --run
 <cli> run
-<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json
+<cli> submit --verify --bundle-output .benchforge/latest.bundle.json --output .benchforge/verifier-result.json --model "<model>" --note "<approach>"
 <cli> submissions list
 <cli> leaderboard
 ```
@@ -71,6 +71,16 @@ Treat `benchforge.submission.v1` bundles as the replayable artifact. Do not ask 
 
 Use `submissions audit` when a result needs a GitHub-friendly artifact directory
 with the bundle, editable files, metadata, and verifier result.
+
+Use optional metadata flags when the result will be shared:
+
+```bash
+<cli> submit --verify --solver "<name>" --model "<model>" --model-family "<family>" --note "<short approach>"
+<cli> verify --bundle .benchforge/latest.bundle.json --commit-url "https://github.com/owner/repo/commit/<sha>"
+```
+
+Metadata is for review, notes, model charts, and commit links. It is not score
+authority.
 
 For a trusted CI or owner-controlled verifier:
 
@@ -106,8 +116,12 @@ Report:
 ## Agent Safety
 
 - Run `doctor --run` before any forceful update, sync, or cleanup workflow.
+- Prefer `doctor --require-clean --expect-remote <repo-url>` before any command
+  that overwrites files.
 - Never run a forceful sync/update command unless the challenge root and git remote match the intended challenge.
 - If `challenge.json` declares `source.repository`, treat a `git-context` doctor failure as a hard stop.
+- Treat a failing `git-clean` check as a hard stop before sync/update; export a
+  bundle or audit directory first if useful work would otherwise be lost.
 
 ## Trust Language
 

@@ -15,6 +15,19 @@ function formatScore(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(3);
 }
 
+function formatDiff(diff) {
+  if (!diff) return "n/a";
+  const value = formatScore(diff.value);
+  const percent = typeof diff.percent === "number" ? `${diff.percent.toFixed(2)}%` : "n/a";
+  return `${value} (${percent})`;
+}
+
+function metricSummary(metrics) {
+  return Object.entries(metrics ?? {})
+    .map(([key, value]) => `${key}: ${formatScore(value)}`)
+    .join(" | ");
+}
+
 export async function exportReport(spec, runs, submissions = []) {
   const data = buildLeaderboardData(spec, runs, submissions);
   const outputDir = join(spec.root, ".benchforge", "site");
@@ -26,17 +39,32 @@ export async function exportReport(spec, runs, submissions = []) {
     <tr>
       <td>${entry.rank}</td>
       <td>${escapeHtml(formatScore(entry.score))}</td>
+      <td class="${entry.diff?.improved ? "improved" : ""}">${escapeHtml(formatDiff(entry.diff))}</td>
       <td><span class="status status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span></td>
+      <td>${escapeHtml(entry.metadata.solver ?? "")}</td>
+      <td>${escapeHtml(entry.metadata.model ?? "")}</td>
       <td>${escapeHtml(entry.runId)}</td>
       <td>${escapeHtml(entry.submissionId ?? "")}</td>
       <td>${escapeHtml(entry.createdAt)}</td>
+      <td>
+        <details>
+          <summary>Details</summary>
+          <div class="detail">
+            <p><strong>Score</strong><br>${escapeHtml(formatScore(entry.score))}</p>
+            <p><strong>Metrics</strong><br>${escapeHtml(metricSummary(entry.metrics))}</p>
+            <p><strong>Diff</strong><br>${escapeHtml(formatDiff(entry.diff))}</p>
+            <p><strong>Note</strong><br>${escapeHtml(entry.metadata.note ?? "")}</p>
+            ${entry.metadata.commitUrl ? `<p><a href="${escapeHtml(entry.metadata.commitUrl)}">View commit</a></p>` : ""}
+          </div>
+        </details>
+      </td>
     </tr>
   `).join("");
 
   const historyRows = data.history.slice(-12).map((point) => `
     <li>
       <span>${escapeHtml(formatScore(point.bestScore))}</span>
-      <small>${escapeHtml(point.status)} · ${escapeHtml(point.createdAt)}</small>
+      <small>${escapeHtml(point.status)} - ${escapeHtml(point.createdAt)}</small>
     </li>
   `).join("");
 
@@ -72,6 +100,11 @@ export async function exportReport(spec, runs, submissions = []) {
     .status-accepted { background: #2d7f95; }
     .status-verified { background: #226fb3; }
     .status-promoted, .status-replicated { background: #1f7449; }
+    .improved { color: #1f7449; font-weight: 700; }
+    details summary { cursor: pointer; font-family: ui-sans-serif, system-ui, sans-serif; color: #1f7449; }
+    .detail { min-width: 280px; max-width: 520px; font-family: ui-sans-serif, system-ui, sans-serif; line-height: 1.45; }
+    .detail p { margin: 12px 0; }
+    .detail a { color: #1f7449; font-weight: 700; }
     .history { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
     .history li { background: #fffdf6; border: 1px solid #deded2; padding: 14px; }
     .history span { display: block; font-weight: 700; }
@@ -98,7 +131,7 @@ export async function exportReport(spec, runs, submissions = []) {
     <section>
       <h2>Leaderboard</h2>
       <table>
-        <thead><tr><th>#</th><th>Score</th><th>Status</th><th>Run</th><th>Submission</th><th>Created</th></tr></thead>
+        <thead><tr><th>#</th><th>Score</th><th>Diff</th><th>Status</th><th>Solver</th><th>Model</th><th>Run</th><th>Submission</th><th>Created</th><th>Details</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </section>

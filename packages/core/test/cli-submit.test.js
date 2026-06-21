@@ -64,7 +64,13 @@ test("submit --verify packages and verifies a candidate in one command", async (
     "--bundle-output",
     ".benchforge/latest.bundle.json",
     "--output",
-    ".benchforge/verifier-result.json"
+    ".benchforge/verifier-result.json",
+    "--solver",
+    "Ada",
+    "--model",
+    "GPT-Test",
+    "--note",
+    "CLI metadata survives verification"
   ], { cwd: root });
 
   const verifierResult = JSON.parse(await readFile(join(root, ".benchforge", "verifier-result.json"), "utf8"));
@@ -74,7 +80,11 @@ test("submit --verify packages and verifies a candidate in one command", async (
   assert.match(result.stdout, /clickfail: verified accepted run/);
   assert.equal(verifierResult.schemaVersion, "benchforge.verification.v1");
   assert.equal(verifierResult.result.status, "accepted");
+  assert.equal(verifierResult.submission.metadata.solver, "Ada");
+  assert.equal(verifierResult.submission.metadata.model, "GPT-Test");
+  assert.equal(verifierResult.submission.metadata.note, "CLI metadata survives verification");
   assert.equal(bundle.schemaVersion, "benchforge.submission.v1");
+  assert.equal(bundle.submission.metadata.model, "GPT-Test");
 });
 
 test("submissions audit exports a GitHub-friendly directory", async () => {

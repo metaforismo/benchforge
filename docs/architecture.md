@@ -85,6 +85,16 @@ checks, hosted API config, bundle support, and git context. If a challenge
 declares an expected `source.repository`, a mismatched or missing git context is
 a failure. This is the guardrail for future forceful sync/update workflows.
 
+For update/sync safety, use the stricter form:
+
+```bash
+<cli> doctor --require-clean --expect-remote https://github.com/owner/challenge
+```
+
+Any forceful update command should treat a failing `git-context` or `git-clean`
+check as a hard stop. This prevents an agent from overwriting a different repo
+just because its process started in the wrong directory.
+
 ## Skill Layer
 
 Benchforge uses two repository-level skills:
@@ -146,6 +156,12 @@ The local verifier is intentionally conservative about wording. It can mark a ca
   "challenge": { "id": "toyfail", "version": "0.1.0" },
   "submission": {
     "id": "sub_...",
+    "metadata": {
+      "solver": "Ada",
+      "model": "Claude Test",
+      "note": "short explanation",
+      "commitUrl": "https://github.com/owner/repo/commit/..."
+    },
     "editablePaths": ["starter/solution.js"],
     "files": ["starter/solution.js"]
   },
@@ -162,6 +178,10 @@ The local verifier is intentionally conservative about wording. It can mark a ca
 ```
 
 The bundle hash covers challenge metadata, candidate metadata, file paths, file hashes, and file contents. `verify --bundle <file>` imports the bundle, rejects tampering, applies only allowed editable files, and then runs the same verifier flow.
+
+Metadata is intentionally descriptive, not trusted scoring data. It powers
+leaderboard details, model-family charts, notes, and GitHub commit links, while
+score authority still comes from replayed verifier results.
 
 ## Verifier Result Contract
 
@@ -180,6 +200,11 @@ The bundle hash covers challenge metadata, candidate metadata, file paths, file 
   "submission": {
     "id": "sub_...",
     "status": "accepted",
+    "metadata": {
+      "solver": "Ada",
+      "model": "Claude Test",
+      "commitUrl": "https://github.com/owner/repo/commit/..."
+    },
     "files": ["starter/solution.js"]
   },
   "verifier": {
@@ -225,6 +250,11 @@ This produces a `promoted` run with `verifier.trusted: true`. Local verifier res
 - score history
 
 The HTML is a static view over the same data and can be uploaded as an artifact, served locally, or later deployed to Pages/Cloudflare.
+
+Entries include optional solver/model metadata, per-entry score diff against the
+previous best known run, notes, and a `View commit` link when `commitUrl` is
+present. GitHub Actions can populate `commitUrl` automatically for submitted
+bundle refs, but local-only challenges can leave it empty.
 
 ## Hosted Submission Flow
 

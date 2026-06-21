@@ -23,10 +23,13 @@ test("buildLeaderboardData separates public and local best scores", () => {
   const data = buildLeaderboardData(
     spec("/tmp/reportfail"),
     [
-      { id: "run_local", status: "local", score: 1, metrics: { time_ms: 1 }, createdAt: "2026-01-02T00:00:00.000Z" },
+      { id: "run_local", status: "local", score: 1, metrics: { time_ms: 1 }, createdAt: "2026-01-02T00:00:00.000Z", sourceSubmissionId: "sub_2" },
       { id: "run_promoted", status: "promoted", score: 3, metrics: { time_ms: 3 }, createdAt: "2026-01-01T00:00:00.000Z", sourceSubmissionId: "sub_1" }
     ],
-    [{ id: "sub_1", files: ["starter/solution.js"] }]
+    [
+      { id: "sub_1", files: ["starter/solution.js"], metadata: { solver: "Ada" } },
+      { id: "sub_2", files: ["starter/solution.js"], metadata: { model: "Claude Test", note: "faster path" } }
+    ]
   );
 
   assert.equal(data.schemaVersion, "benchforge.leaderboard.v1");
@@ -34,6 +37,9 @@ test("buildLeaderboardData separates public and local best scores", () => {
   assert.equal(data.best.public.runId, "run_promoted");
   assert.equal(data.counts.promoted, 1);
   assert.equal(data.entries[1].files[0], "starter/solution.js");
+  assert.equal(data.entries[0].metadata.model, "Claude Test");
+  assert.equal(data.entries[0].diff.value, -2);
+  assert.equal(data.entries[0].diff.improved, true);
 });
 
 test("exportReport writes index.html and leaderboard.json", async () => {
@@ -43,7 +49,16 @@ test("exportReport writes index.html and leaderboard.json", async () => {
     [
       { id: "run_1", status: "promoted", score: 8, metrics: { time_ms: 8 }, createdAt: "2026-01-01T00:00:00.000Z", sourceSubmissionId: "sub_1" }
     ],
-    [{ id: "sub_1", files: ["starter/solution.js"] }]
+    [{
+      id: "sub_1",
+      files: ["starter/solution.js"],
+      metadata: {
+        solver: "Ada",
+        model: "Claude Test",
+        note: "kept the public invariant intact",
+        commitUrl: "https://github.com/example/repo/commit/abc"
+      }
+    }]
   );
 
   const html = await readFile(outputPath, "utf8");
@@ -51,5 +66,9 @@ test("exportReport writes index.html and leaderboard.json", async () => {
 
   assert.match(html, /Report Fail/);
   assert.match(html, /Best public score/);
+  assert.match(html, /Claude Test/);
+  assert.match(html, /View commit/);
+  assert.match(html, /kept the public invariant intact/);
   assert.equal(json.best.public.runId, "run_1");
+  assert.equal(json.best.public.metadata.commitUrl, "https://github.com/example/repo/commit/abc");
 });

@@ -53,6 +53,18 @@ node ./challenges/grpoarena/bin/grpoarena.js verify --json --output .benchforge/
 
 That generated CLI is real: it loads the shared Benchforge engine with the generated `challenges/grpoarena/challenge.json`.
 
+Before any agent-driven update or sync, run:
+
+```bash
+node ./challenges/grpoarena/bin/grpoarena.js doctor \
+  --require-clean \
+  --expect-remote https://github.com/you/grpoarena
+```
+
+This is the guardrail against the classic "agent ran a force update in the
+wrong directory" failure. A future sync/update command should refuse to proceed
+unless this check passes.
+
 ## Minimal Benchmark Contract
 
 Benchforge can also run an ECDSA.fail-style `benchmark.json` when no
@@ -141,7 +153,10 @@ For an ECDSA.fail-style local loop, use one command:
 node ./challenges/toyfail/bin/toyfail.js submit \
   --verify \
   --bundle-output .benchforge/latest.bundle.json \
-  --output .benchforge/verifier-result.json
+  --output .benchforge/verifier-result.json \
+  --solver "Ada" \
+  --model "Claude Test" \
+  --note "Describe the approach in one or two useful sentences."
 ```
 
 Each submission also writes a portable `benchforge.submission.v1` bundle containing only allowed editable files, file hashes, and candidate metadata. You can export or verify a bundle directly:
@@ -155,6 +170,11 @@ node ./challenges/toyfail/bin/toyfail.js submissions audit latest --output .benc
 ```
 
 `verify` reconstructs the candidate in a temporary clean challenge copy, runs public tests and scoring, and records an `accepted` local run.
+
+Submission metadata is optional and travels with the bundle/verifier result:
+`solver`, `model`, `modelFamily`, `note`, and `commitUrl`. The static report
+uses those fields to show ECDSA.fail-style details without making GitHub the
+only backend.
 
 `submissions audit` writes a GitHub-friendly directory containing the portable
 bundle, editable files, local metadata, README, and verifier result when one is

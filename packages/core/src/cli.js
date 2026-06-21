@@ -35,13 +35,15 @@ Commands:
   test                      Run public tests only
   score                     Run score command only
   doctor                    Preflight challenge configuration
-                           optional: --run --json
+                           optional: --run --json --require-clean --expect-remote <url>
   submit                    Package current editable files as a candidate
                            optional: --bundle-output <path> --verify --output <path>
+                           optional: --note <text> --solver <name> --model <name>
   verify [id] [--json]      Verify candidate with public checks
                            optional: --bundle <path>
                            optional: --output <path>
                            optional: --trusted --promote --verifier-kind <kind>
+                           optional: --commit-url <url>
   receipt verify <file>     Verify a receipt JSON file
   submissions list          Show local candidate submissions
   submissions audit [id]    Export a GitHub-friendly audit directory
@@ -128,7 +130,8 @@ function parseVerifyArgs(args) {
     bundle: null,
     trusted: false,
     promote: false,
-    verifierKind: null
+    verifierKind: null,
+    metadata: {}
   };
   let idWasSet = false;
 
@@ -155,6 +158,18 @@ function parseVerifyArgs(args) {
       if (!verifierKind) throw new Error("--verifier-kind requires a value");
       options.verifierKind = verifierKind;
       index += 1;
+    } else if (["--note", "--solver", "--model", "--model-family", "--commit-url"].includes(arg)) {
+      const value = args[index + 1];
+      if (!value) throw new Error(`${arg} requires a value`);
+      const metadataKey = {
+        "--note": "note",
+        "--solver": "solver",
+        "--model": "model",
+        "--model-family": "modelFamily",
+        "--commit-url": "commitUrl"
+      }[arg];
+      options.metadata[metadataKey] = value;
+      index += 1;
     } else if (!idWasSet) {
       options.id = arg;
       idWasSet = true;
@@ -173,7 +188,7 @@ function parseVerifyArgs(args) {
 function parseOptions(args) {
   const positional = [];
   const options = {};
-  const booleanOptions = new Set(["json", "promote", "run", "trusted", "verify"]);
+  const booleanOptions = new Set(["json", "promote", "require-clean", "run", "trusted", "verify"]);
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -204,6 +219,18 @@ function hostedOptions(spec, options) {
     token: options.token ?? env.token,
     challengeId: options.challenge ?? spec.id
   };
+}
+
+function metadataFromOptions(options) {
+  return Object.fromEntries(
+    [
+      ["note", options.note],
+      ["solver", options.solver],
+      ["model", options.model],
+      ["modelFamily", options["model-family"]],
+      ["commitUrl", options["commit-url"]]
+    ].filter(([, value]) => typeof value === "string" && value.length > 0)
+  );
 }
 
 async function writeJsonOutput(spec, outputPath, value) {
@@ -278,7 +305,11 @@ async function main(argv = process.argv) {
 
   if (command === "doctor") {
     const { options } = parseOptions([subcommand, ...rest].filter(Boolean));
-    const report = await runDoctor(spec, { run: options.run === true });
+    const report = await runDoctor(spec, {
+      run: options.run === true,
+      requireClean: options["require-clean"] === true,
+      expectRemote: options["expect-remote"]
+    });
     if (options.json) {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -336,7 +367,7 @@ async function main(argv = process.argv) {
     }
 
     const scoreResult = await runScore(spec);
-    const submission = await createSubmission(spec, scoreResult);
+    const submission = await createSubmission(spec, scoreResult, metadataFromOptions(options));
     let bundleOutput = submission.bundlePath;
     if (options["bundle-output"]) {
       const exported = await exportSubmissionBundle(spec, submission.id, resolveChallengePath(spec, options["bundle-output"]));
@@ -351,7 +382,8 @@ async function main(argv = process.argv) {
       const verified = await verifySubmission(spec, submission.id, {
         trusted: options.trusted === true,
         promote: options.promote === true,
-        verifierKind: options["verifier-kind"]
+        verifierKind: options["verifier-kind"],
+        metadata: metadataFromOptions(options)
       });
       const outputPath = await writeJsonOutput(
         spec,
@@ -369,7 +401,8 @@ async function main(argv = process.argv) {
     const verifyOptions = {
       trusted: options.trusted,
       promote: options.promote,
-      verifierKind: options.verifierKind
+      verifierKind: options.verifierKind,
+      metadata: options.metadata
     };
     const verified = options.bundle
       ? await verifySubmissionBundle(spec, resolveChallengePath(spec, options.bundle), verifyOptions)
