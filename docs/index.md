@@ -21,9 +21,11 @@ If you want to understand the product:
 If you want to create a new challenge:
 
 1. Read [Challenge Author Guide](./challenge-author-guide.md).
-2. Use [Trust And Anti-Cheat](./trust-and-anti-cheat.md) while designing the
+2. Fill [Design Questionnaire](./design-questionnaire.md).
+3. Pick a starting point from [Challenge Recipes](./challenge-recipes.md).
+4. Use [Trust And Anti-Cheat](./trust-and-anti-cheat.md) while designing the
    verifier.
-3. Check [CLI Reference](./cli-reference.md) while testing the generated CLI.
+5. Check [CLI Reference](./cli-reference.md) while testing the generated CLI.
 
 If you are an agent:
 
@@ -50,6 +52,10 @@ If you want a public leaderboard:
   recipes.
 - [Challenge Author Guide](./challenge-author-guide.md): how to turn a problem
   into a benchmark arena.
+- [Design Questionnaire](./design-questionnaire.md): questions that define the
+  benchmark contract.
+- [Challenge Recipes](./challenge-recipes.md): reusable blueprints for ML,
+  math, algorithm, systems, and existing-repo challenges.
 - [Agent Guide](./agent-guide.md): how agents should iterate, note failures,
   submit, and report trust status.
 - [Trust And Anti-Cheat](./trust-and-anti-cheat.md): threat model and verifier
@@ -80,4 +86,3 @@ candidate bundle -> useful for handoff
 accepted result -> replayed locally
 verified/promoted result -> replayed by a trusted verifier
 ```
-

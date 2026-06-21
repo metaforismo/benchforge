@@ -13,6 +13,8 @@ const markdownFiles = [
   "docs/getting-started.md",
   "docs/cli-reference.md",
   "docs/challenge-author-guide.md",
+  "docs/design-questionnaire.md",
+  "docs/challenge-recipes.md",
   "docs/agent-guide.md",
   "docs/trust-and-anti-cheat.md",
   "docs/submission-lifecycle.md",

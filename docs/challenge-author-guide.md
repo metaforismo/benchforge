@@ -2,6 +2,10 @@
 
 This guide explains how to turn a vague problem into a Benchforge challenge.
 
+Use [Design Questionnaire](./design-questionnaire.md) to collect the contract
+details. Use [Challenge Recipes](./challenge-recipes.md) when you want a
+domain-specific starting point.
+
 ## The Author's Job
 
 A challenge author defines:
@@ -214,4 +218,3 @@ Before sharing a challenge:
 - `submissions audit` produces a useful review directory.
 - Trust language in README says local is not public proof.
 - The challenge-specific `SKILL.md` tells agents what they may edit.
-

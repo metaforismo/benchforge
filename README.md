@@ -23,6 +23,10 @@ Key guides:
 - [CLI Reference](docs/cli-reference.md): all factory and challenge commands.
 - [Challenge Author Guide](docs/challenge-author-guide.md): turn a problem into
   a verifier-ready benchmark arena.
+- [Design Questionnaire](docs/design-questionnaire.md): questions that define a
+  benchmark contract.
+- [Challenge Recipes](docs/challenge-recipes.md): blueprints for ML, math,
+  algorithm, systems, and existing-repo challenges.
 - [Agent Guide](docs/agent-guide.md): rules for agents that optimize inside a
   challenge.
 - [Trust And Anti-Cheat](docs/trust-and-anti-cheat.md): threat model,
