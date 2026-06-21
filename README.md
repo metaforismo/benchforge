@@ -11,6 +11,29 @@ It helps you build public challenges like ECDSA.fail-style arenas:
 - verifier receipts
 - Cloudflare hosted leaderboards
 
+## Documentation
+
+Start with [docs/index.md](docs/index.md).
+
+Key guides:
+
+- [Concepts](docs/concepts.md): mental model, local-first design, trust tiers.
+- [Getting Started](docs/getting-started.md): run the included `toyfail`
+  challenge end to end.
+- [CLI Reference](docs/cli-reference.md): all factory and challenge commands.
+- [Challenge Author Guide](docs/challenge-author-guide.md): turn a problem into
+  a verifier-ready benchmark arena.
+- [Agent Guide](docs/agent-guide.md): rules for agents that optimize inside a
+  challenge.
+- [Trust And Anti-Cheat](docs/trust-and-anti-cheat.md): threat model,
+  verifier-only checks, and promotion rules.
+- [Submission Lifecycle](docs/submission-lifecycle.md): bundles, verification,
+  audit artifacts, hosted publish.
+- [Update Safety](docs/update-safety.md): how to prevent agent-driven sync or
+  update mistakes.
+- [Architecture](docs/architecture.md): reusable engine, challenge packs,
+  hosted API, GitHub audit trail.
+
 ## The Important Trust Rule
 
 Local scores are useful for iteration, but they are not public proof.

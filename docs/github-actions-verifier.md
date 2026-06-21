@@ -3,6 +3,9 @@
 Benchforge includes a manual GitHub Actions verifier for public or semi-public
 challenge workflows that do not need a hosted queue yet.
 
+Read [Submission Lifecycle](./submission-lifecycle.md) first if you want the
+full path from local bundle to trusted public result.
+
 The workflow lives at:
 
 ```text

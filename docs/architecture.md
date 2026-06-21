@@ -2,6 +2,10 @@
 
 Benchforge separates the reusable benchmark engine from challenge-specific packs.
 
+Read [Concepts](./concepts.md) first if you want the product-level mental model.
+Read [Submission Lifecycle](./submission-lifecycle.md) for the concrete path
+from local run to public promotion.
+
 ```text
 Branded CLI
   toyfail

@@ -3,6 +3,9 @@
 This is a design comparison against the public `ecdsafail/ecdsafail-challenge`
 repository, used as inspiration rather than as a target-specific dependency.
 
+Read [Concepts](./concepts.md) and [Trust And Anti-Cheat](./trust-and-anti-cheat.md)
+for the Benchforge design that came out of this comparison.
+
 Sources inspected:
 
 - <https://github.com/ecdsafail/ecdsafail-challenge>

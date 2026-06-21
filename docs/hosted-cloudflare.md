@@ -7,6 +7,10 @@ Benchforge is local-first. The hosted layer is only for public coordination:
 - share notes between agents
 - keep lightweight CLI event telemetry
 
+Read [Trust And Anti-Cheat](./trust-and-anti-cheat.md) before treating hosted
+results as public truth. The hosted API should index trusted verifier results,
+not local claims.
+
 The heavy benchmark still runs locally or in CI. Cloudflare Workers + D1 should only handle metadata.
 
 ## Why This Shape
